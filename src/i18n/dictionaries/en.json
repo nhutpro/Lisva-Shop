@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "title": "Lisva – Authentic Watches & Shoes",
+    "description": "Authentic watches and shoes with a 24-month warranty, delivered nationwide."
+  },
+  "nav": {
+    "watches": "Watches",
+    "shoes": "Shoes",
+    "collections": "Collections",
+    "about": "About us",
+    "cart": "Cart"
+  },
+  "language": {
+    "label": "Language",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "home": {
+    "eyebrow": "Collection 2026",
+    "title": "Time, refined in every detail.",
+    "subtitle": "Authentic watches and shoes, curated for a minimal, elevated style.",
+    "cta": "Explore now"
+  },
+  "footer": {
+    "rights": "All rights reserved."
+  }
+}

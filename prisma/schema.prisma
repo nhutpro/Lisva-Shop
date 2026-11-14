@@ -1,0 +1,358 @@
+// Data model for Lisva Shop. Spec: docs/specs/001-database. Diagram: docs/specs/001-database/diagram.md
+// Raw SQL extras (unique index with NULLs, CHECK constraints, trigram search) live in the migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum SizeType {
+  SHOE
+  WATCH
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum ContactMethod {
+  PHONE
+  ZALO
+}
+
+// Vietnamese labels: Chờ liên hệ, Đã liên hệ, Đã xác nhận, Đang giao, Hoàn thành, Đã hủy
+enum OrderStatus {
+  PENDING_CONTACT
+  CONTACTED
+  CONFIRMED
+  SHIPPING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum PaymentMethod {
+  COD
+  BANK_TRANSFER
+  OTHER
+}
+
+// ---------- Catalog ----------
+
+model Category {
+  id        String     @id @default(cuid())
+  slug      String     @unique
+  nameVi    String
+  nameEn    String?
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  position  Int        @default(0)
+  imageUrl  String?
+  products  Product[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([parentId])
+}
+
+model Brand {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String
+  skuPrefix String    @unique
+  logoUrl   String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  categoryId     String
+  category       Category         @relation(fields: [categoryId], references: [id])
+  brandId        String
+  brand          Brand            @relation(fields: [brandId], references: [id])
+  nameVi         String
+  nameEn         String?
+  descriptionVi  String?
+  descriptionEn  String?
+  /// Default selling price in whole VND. A variant may override it.
+  price          Int
+  /// Original price shown crossed out when on sale.
+  compareAtPrice Int?
+  status         ProductStatus    @default(DRAFT)
+  /// [{ key, labelVi, labelEn?, valueVi, valueEn? }], validated with Zod in code.
+  specs          Json             @default("[]")
+  /// Lowercase, no diacritics; built in code (src/lib/search.ts).
+  searchText     String           @default("")
+  featured       Boolean          @default(false)
+  publishedAt    DateTime?
+  colors         ProductColor[]
+  variants       ProductVariant[]
+  images         ProductImage[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([status])
+  // Created in the init migration together with the pg_trgm extension; declared here so Prisma does not drop it.
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_searchText_trgm_idx")
+}
+
+model ProductColor {
+  id        String           @id @default(cuid())
+  productId String
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  nameVi    String
+  nameEn    String?
+  hex       String?
+  position  Int              @default(0)
+  variants  ProductVariant[]
+  images    ProductImage[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([productId, nameVi])
+}
+
+/// Shared list of sizes (not per product).
+model Size {
+  id           String           @id @default(cuid())
+  type         SizeType
+  label        String
+  position     Int              @default(0)
+  footLengthCm Decimal?         @db.Decimal(4, 1)
+  usSize       String?
+  variants     ProductVariant[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([type, label])
+}
+
+/// One exact sellable item. Every product has at least one (a default variant when it has no options).
+model ProductVariant {
+  id         String         @id @default(cuid())
+  productId  String
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  colorId    String?
+  color      ProductColor?  @relation(fields: [colorId], references: [id], onDelete: NoAction)
+  sizeId     String?
+  size       Size?          @relation(fields: [sizeId], references: [id], onDelete: NoAction)
+  sku        String         @unique
+  /// Overrides Product.price when set.
+  price      Int?
+  stock      Int            @default(0)
+  isActive   Boolean        @default(true)
+  position   Int            @default(0)
+  images     ProductImage[]
+  orderItems OrderItem[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([productId])
+  @@index([colorId])
+  @@index([sizeId])
+}
+
+model ProductImage {
+  id        String          @id @default(cuid())
+  productId String
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Photo of one exact variant. At most one of variantId / colorId is set (CHECK in migration).
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  /// Photo shared by every size of a color.
+  colorId   String?
+  color     ProductColor?   @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  url       String
+  altVi     String?
+  altEn     String?
+  position  Int             @default(0)
+  createdAt DateTime        @default(now())
+
+  @@index([productId, variantId, colorId, position])
+}
+
+// ---------- People (Auth.js adapter shape for Account, Session, VerificationToken) ----------
+
+model User {
+  id            String               @id @default(cuid())
+  email         String               @unique
+  emailVerified DateTime?
+  name          String?
+  phone         String?
+  passwordHash  String?
+  role          UserRole             @default(CUSTOMER)
+  locale        String               @default("vi")
+  addresses     Address[]
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  notes         OrderNote[]
+  statusChanges OrderStatusHistory[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+}
+
+model Address {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientName String
+  phone         String
+  province      String
+  district      String
+  ward          String
+  street        String
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Orders (release 1: order request, no online payment) ----------
+
+model Order {
+  id               String               @id @default(cuid())
+  /// Short human code shown to the customer, e.g. LV-2611-7KQ2.
+  code             String               @unique
+  userId           String?
+  user             User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName     String
+  phone            String
+  email            String?
+  preferredContact ContactMethod        @default(PHONE)
+  province         String
+  district         String
+  ward             String
+  street           String
+  customerNote     String?
+  locale           String               @default("vi")
+  status           OrderStatus          @default(PENDING_CONTACT)
+  subtotal         Int
+  /// Empty until the owner quotes it to the customer.
+  shippingFee      Int?
+  total            Int
+  paymentStatus    PaymentStatus        @default(UNPAID)
+  paymentMethod    PaymentMethod?
+  paidAt           DateTime?
+  paymentNote      String?
+  /// Guards against deducting or restoring stock twice.
+  stockDeducted    Boolean              @default(false)
+  /// Null means the owner has not opened the order yet (shows as "new").
+  adminSeenAt      DateTime?
+  items            OrderItem[]
+  history          OrderStatusHistory[]
+  notes            OrderNote[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([phone])
+  @@index([adminSeenAt])
+  @@index([userId])
+}
+
+/// Snapshot of what the customer saw; never changes when the catalog changes.
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  productName String
+  colorName   String?
+  sizeLabel   String?
+  sku         String
+  imageUrl    String?
+  unitPrice   Int
+  quantity    Int
+  lineTotal   Int
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+model OrderStatusHistory {
+  id          String       @id @default(cuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String?
+  changedBy   User?        @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+
+  @@index([orderId])
+}
+
+/// Private notes for the owner; never shown to customers.
+model OrderNote {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}

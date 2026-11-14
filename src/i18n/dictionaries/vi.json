@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "title": "Lisva – Đồng hồ & Giày chính hãng",
+    "description": "Đồng hồ và giày chính hãng, bảo hành 24 tháng, giao hàng toàn quốc."
+  },
+  "nav": {
+    "watches": "Đồng hồ",
+    "shoes": "Giày",
+    "collections": "Bộ sưu tập",
+    "about": "Về chúng tôi",
+    "cart": "Giỏ hàng"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "home": {
+    "eyebrow": "Bộ sưu tập 2026",
+    "title": "Thời gian, tinh tế từng chi tiết.",
+    "subtitle": "Đồng hồ và giày chính hãng, chọn lọc cho phong cách tối giản và đẳng cấp.",
+    "cta": "Khám phá ngay"
+  },
+  "footer": {
+    "rights": "Bảo lưu mọi quyền."
+  }
+}
