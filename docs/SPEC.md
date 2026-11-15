@@ -94,7 +94,7 @@ Optional: GitHub Spec Kit can automate gates 1-3 (not yet verified for this proj
 |---|---|---|
 | 0 Foundation (done) | Next.js app, Tailwind theme from DESIGN.md, i18n, lint/test setup (CI still to add) | none (setup) |
 | 1 Data (done) | Prisma schema, migrations, seed data, order and catalog logic with tests ([spec](specs/001-database/spec.md)) | F01 model |
-| 2 Storefront UI | Home, list, detail from mock data using the A1 design | F01, F02, F03 |
+| 2 Storefront UI (done) | Home, list, detail on real data using the A1 design ([spec](specs/002-storefront/spec.md)) | F01, F02, F03 |
 | 3 Cart and order request | Cart, order request form, order creation, owner notification | F04, F05 |
 | 4 Accounts | Auth, profile, addresses, order history | F08, F07 |
 | 5 Admin | Product and order management, manual status workflow, Telegram new-order alert | F09 |

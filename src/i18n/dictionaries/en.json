@@ -1,27 +1,158 @@
 {
   "meta": {
     "title": "Lisva – Authentic Watches & Shoes",
-    "description": "Authentic watches and shoes with a 24-month warranty, delivered nationwide."
+    "description": "Authentic watches and shoes with a 24-month warranty, delivered nationwide.",
+    "productsTitle": "Products",
+    "productsDescription": "Authentic watches and shoes: filter by brand, price, size and color."
+  },
+  "common": {
+    "skipToContent": "Skip to main content",
+    "menu": "Menu",
+    "closeMenu": "Close menu",
+    "from": "From",
+    "soldOut": "Sold out",
+    "sale": "Sale",
+    "new": "New",
+    "viewAll": "View all",
+    "home": "Home",
+    "currencyNote": "Prices include VAT"
   },
   "nav": {
     "watches": "Watches",
     "shoes": "Shoes",
-    "collections": "Collections",
+    "all": "All products",
     "about": "About us",
-    "cart": "Cart"
+    "cart": "Cart",
+    "cartCount": "Cart, {count} items",
+    "primary": "Main navigation"
   },
   "language": {
     "label": "Language",
     "vi": "Tiếng Việt",
     "en": "English"
   },
+  "search": {
+    "label": "Search products",
+    "placeholder": "Search products...",
+    "submit": "Search"
+  },
   "home": {
     "eyebrow": "Collection 2026",
     "title": "Time, refined in every detail.",
     "subtitle": "Authentic watches and shoes, curated for a minimal, elevated style.",
-    "cta": "Explore now"
+    "cta": "Explore now",
+    "ctaSecondary": "View shoes",
+    "statGenuine": "Authentic",
+    "statWarranty": "Warranty",
+    "statReturns": "Returns",
+    "statGenuineValue": "100%",
+    "statWarrantyValue": "24 months",
+    "statReturnsValue": "7 days",
+    "categoriesTitle": "Shop by category",
+    "categoryCount": "{count} products",
+    "categoryLink": "View collection",
+    "featuredTitle": "Featured",
+    "featuredSubtitle": "Most loved picks this month",
+    "newestTitle": "New arrivals",
+    "newestSubtitle": "Just added to the store"
+  },
+  "trust": {
+    "genuineTitle": "100% authentic",
+    "genuineText": "Full invoice included",
+    "warrantyTitle": "24-month warranty",
+    "warrantyText": "Support nationwide",
+    "returnsTitle": "7-day returns",
+    "returnsText": "Fast and easy",
+    "contactTitle": "We contact you to confirm",
+    "contactText": "We call or message you on Zalo to complete the order"
+  },
+  "products": {
+    "title": "All products",
+    "resultCount": "{count} products",
+    "resultFor": "Results for “{query}”",
+    "noResultsTitle": "No matching products found",
+    "noResultsText": "Try removing some filters or searching with different words.",
+    "clearFilters": "Clear filters",
+    "loading": "Loading products",
+    "filters": {
+      "title": "Filters",
+      "open": "Open filters",
+      "category": "Category",
+      "allCategories": "All",
+      "brand": "Brand",
+      "price": "Price range (₫)",
+      "minPrice": "From",
+      "maxPrice": "To",
+      "size": "Size",
+      "color": "Color",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "sort": {
+      "label": "Sort by",
+      "new": "Newest",
+      "priceAsc": "Price: low to high",
+      "priceDesc": "Price: high to low"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {page}",
+      "current": "Page {page} of {total}"
+    }
+  },
+  "product": {
+    "breadcrumb": "Breadcrumb",
+    "color": "Color",
+    "size": "Size",
+    "chooseColor": "Please choose a color",
+    "chooseSize": "Please choose a size",
+    "chooseBoth": "Please choose a color and a size",
+    "unavailableCombination": "This version is not available",
+    "optionUnavailable": "not available",
+    "optionSoldOut": "sold out",
+    "addToCart": "Add to cart",
+    "soldOutButton": "Sold out",
+    "added": "Added to your cart",
+    "viewCart": "View cart",
+    "sku": "SKU",
+    "inStock": "In stock",
+    "lowStock": "Only {count} left",
+    "soldOut": "Sold out",
+    "stockNote": "Stock is checked again when we confirm your order.",
+    "description": "Description",
+    "specs": "Specifications",
+    "gallery": "Product photo gallery",
+    "photo": "Photo {n}",
+    "selectedPhoto": "Photo {n} of {total}",
+    "sizeGuide": {
+      "title": "Size guide",
+      "size": "Size",
+      "foot": "Foot length (cm)",
+      "us": "US size"
+    },
+    "sale": "{percent}% off"
   },
   "footer": {
-    "rights": "All rights reserved."
+    "tagline": "Authentic watches and shoes, curated for a minimal style.",
+    "shop": "Shop",
+    "support": "Support",
+    "hotline": "Hotline",
+    "zalo": "Chat on Zalo",
+    "address": "Store address coming soon",
+    "hours": "Open 9:00 – 21:00 every day",
+    "rights": "All rights reserved.",
+    "mockupNote": "Product images are currently illustrations."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "The page you are looking for does not exist, or the product is no longer sold.",
+    "back": "Back to home"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "text": "Please try again in a few minutes.",
+    "retry": "Try again"
   }
 }

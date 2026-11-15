@@ -44,6 +44,15 @@ Next.js 16 (App Router) + TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), lucid
 - The init migration contains hand-written SQL (CHECK constraints, a unique index that treats NULL color/size as equal, pg_trgm search index). Keep it when editing migrations. Check drift with `prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script` (empty means in sync).
 - `prisma migrate dev` can hang without a TTY when it wants to ask a question; read what it needs and run it in a terminal.
 
+## Storefront (spec 002)
+- Routes: `src/app/[lang]/` home, `products` (list, filters in the URL), `products/[slug]`; also `not-found.tsx`, `error.tsx`, a `[...rest]` catch-all that shows the localized 404, and `src/app/sitemap.ts` / `robots.ts`.
+- Reads go through `src/lib/catalog/queries.ts` (cached with `'use cache'`, `cacheLife`, `cacheTag("products")`), which wrap the plain, tested functions in `queries-core.ts`. They return serializable DTOs (`types.ts`). Call `updateTag("products")` after admin edits or stock changes.
+- `searchParams`/`params` are runtime values: read them inside `<Suspense>` (list page) or use `generateStaticParams` (product page). Client components that read the URL (`usePathname`, `useSearchParams`) must sit inside `<Suspense>`, or the build fails.
+- List filters are a plain GET form; the query string is parsed by `parseListParams` (safe fallbacks) and built with `listParamsToSearch`.
+- Variant picker rules are pure functions in `src/lib/catalog/variant-selection.ts`; the cart store (`src/lib/cart/store.ts`) holds only `{ variantId, quantity }` and is rehydrated by `CartHydrator`.
+- `npm run build` needs the database running. Component tests need no extra setup (`vitest.setup.ts` cleans up after each test).
+- The cart page (`/[lang]/cart`) does not exist yet (spec 003); links to it 404 until then.
+
 ## Environment notes
 - Local Node is 20.13. Vitest is pinned to 4.x, Vite to 6.x and jsdom to 26 because newer versions need Node 22+. Upgrading Node to 22 LTS would lift these pins.
 - `npm install` of dev tools may need `--legacy-peer-deps` (npm 10.5 crashes on some optional peer ranges).

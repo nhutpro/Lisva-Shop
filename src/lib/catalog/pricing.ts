@@ -6,7 +6,14 @@ export function effectivePrice(
   return variant.price ?? product.price;
 }
 
-type ImageLike = { variantId: string | null; colorId: string | null; position: number };
+/** Whole-number discount percent for a crossed-out original price, or null when there is no sale. */
+export function salePercent(price: number, compareAtPrice: number | null): number | null {
+  if (!compareAtPrice || compareAtPrice <= price) return null;
+  const percent = Math.round((1 - price / compareAtPrice) * 100);
+  return percent >= 1 ? percent : null;
+}
+
+type ImageLike ={ variantId: string | null; colorId: string | null; position: number };
 
 /**
  * Photos to show for a chosen variant: its own photos first, else its color's photos,

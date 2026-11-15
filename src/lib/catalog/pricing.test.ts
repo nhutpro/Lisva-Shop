@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { effectivePrice, pickImages } from "./pricing";
+import { effectivePrice, pickImages, salePercent } from "./pricing";
+
+describe("salePercent", () => {
+  it("rounds the discount", () => {
+    expect(salePercent(1_790_000, 2_090_000)).toBe(14);
+    expect(salePercent(500, 1000)).toBe(50);
+  });
+  it("is null without a real discount", () => {
+    expect(salePercent(1000, null)).toBeNull();
+    expect(salePercent(1000, 1000)).toBeNull();
+    expect(salePercent(1000, 500)).toBeNull();
+    expect(salePercent(9_999, 10_000)).toBeNull(); // rounds to 0%
+  });
+});
 
 describe("effectivePrice", () => {
   it("uses the variant price when set", () => {

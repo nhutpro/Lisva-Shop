@@ -1,27 +1,158 @@
 {
   "meta": {
     "title": "Lisva – Đồng hồ & Giày chính hãng",
-    "description": "Đồng hồ và giày chính hãng, bảo hành 24 tháng, giao hàng toàn quốc."
+    "description": "Đồng hồ và giày chính hãng, bảo hành 24 tháng, giao hàng toàn quốc.",
+    "productsTitle": "Sản phẩm",
+    "productsDescription": "Đồng hồ và giày chính hãng: lọc theo thương hiệu, giá, size và màu."
+  },
+  "common": {
+    "skipToContent": "Bỏ qua, đến nội dung chính",
+    "menu": "Menu",
+    "closeMenu": "Đóng menu",
+    "from": "Từ",
+    "soldOut": "Hết hàng",
+    "sale": "Giảm giá",
+    "new": "Mới",
+    "viewAll": "Xem tất cả",
+    "home": "Trang chủ",
+    "currencyNote": "Giá đã gồm VAT"
   },
   "nav": {
     "watches": "Đồng hồ",
     "shoes": "Giày",
-    "collections": "Bộ sưu tập",
+    "all": "Tất cả sản phẩm",
     "about": "Về chúng tôi",
-    "cart": "Giỏ hàng"
+    "cart": "Giỏ hàng",
+    "cartCount": "Giỏ hàng, {count} sản phẩm",
+    "primary": "Điều hướng chính"
   },
   "language": {
     "label": "Ngôn ngữ",
     "vi": "Tiếng Việt",
     "en": "English"
   },
+  "search": {
+    "label": "Tìm kiếm sản phẩm",
+    "placeholder": "Tìm giày, đồng hồ...",
+    "submit": "Tìm"
+  },
   "home": {
     "eyebrow": "Bộ sưu tập 2026",
     "title": "Thời gian, tinh tế từng chi tiết.",
     "subtitle": "Đồng hồ và giày chính hãng, chọn lọc cho phong cách tối giản và đẳng cấp.",
-    "cta": "Khám phá ngay"
+    "cta": "Khám phá ngay",
+    "ctaSecondary": "Xem giày",
+    "statGenuine": "Chính hãng",
+    "statWarranty": "Bảo hành",
+    "statReturns": "Đổi trả",
+    "statGenuineValue": "100%",
+    "statWarrantyValue": "24 tháng",
+    "statReturnsValue": "7 ngày",
+    "categoriesTitle": "Mua theo danh mục",
+    "categoryCount": "{count} sản phẩm",
+    "categoryLink": "Xem bộ sưu tập",
+    "featuredTitle": "Nổi bật",
+    "featuredSubtitle": "Những lựa chọn được yêu thích tháng này",
+    "newestTitle": "Hàng mới về",
+    "newestSubtitle": "Vừa cập nhật trong cửa hàng"
+  },
+  "trust": {
+    "genuineTitle": "100% chính hãng",
+    "genuineText": "Có hóa đơn đầy đủ",
+    "warrantyTitle": "Bảo hành 24 tháng",
+    "warrantyText": "Hỗ trợ toàn quốc",
+    "returnsTitle": "Đổi trả 7 ngày",
+    "returnsText": "Nhanh chóng, dễ dàng",
+    "contactTitle": "Liên hệ xác nhận",
+    "contactText": "Chúng tôi gọi hoặc nhắn Zalo để chốt đơn"
+  },
+  "products": {
+    "title": "Tất cả sản phẩm",
+    "resultCount": "{count} sản phẩm",
+    "resultFor": "Kết quả cho “{query}”",
+    "noResultsTitle": "Không tìm thấy sản phẩm phù hợp",
+    "noResultsText": "Thử bỏ bớt bộ lọc hoặc tìm bằng từ khóa khác.",
+    "clearFilters": "Xóa bộ lọc",
+    "loading": "Đang tải sản phẩm",
+    "filters": {
+      "title": "Bộ lọc",
+      "open": "Mở bộ lọc",
+      "category": "Danh mục",
+      "allCategories": "Tất cả",
+      "brand": "Thương hiệu",
+      "price": "Khoảng giá (₫)",
+      "minPrice": "Từ",
+      "maxPrice": "Đến",
+      "size": "Size",
+      "color": "Màu sắc",
+      "apply": "Áp dụng",
+      "reset": "Đặt lại"
+    },
+    "sort": {
+      "label": "Sắp xếp",
+      "new": "Mới nhất",
+      "priceAsc": "Giá thấp đến cao",
+      "priceDesc": "Giá cao đến thấp"
+    },
+    "pagination": {
+      "label": "Phân trang",
+      "previous": "Trang trước",
+      "next": "Trang sau",
+      "page": "Trang {page}",
+      "current": "Trang {page} trên {total}"
+    }
+  },
+  "product": {
+    "breadcrumb": "Đường dẫn",
+    "color": "Màu sắc",
+    "size": "Size",
+    "chooseColor": "Vui lòng chọn màu sắc",
+    "chooseSize": "Vui lòng chọn size",
+    "chooseBoth": "Vui lòng chọn màu sắc và size",
+    "unavailableCombination": "Phiên bản này không có sẵn",
+    "optionUnavailable": "không có sẵn",
+    "optionSoldOut": "hết hàng",
+    "addToCart": "Thêm vào giỏ",
+    "soldOutButton": "Hết hàng",
+    "added": "Đã thêm vào giỏ hàng",
+    "viewCart": "Xem giỏ hàng",
+    "sku": "Mã SKU",
+    "inStock": "Còn hàng",
+    "lowStock": "Chỉ còn {count} sản phẩm",
+    "soldOut": "Hết hàng",
+    "stockNote": "Tồn kho được kiểm tra lại khi chúng tôi xác nhận đơn.",
+    "description": "Mô tả",
+    "specs": "Thông số",
+    "gallery": "Thư viện ảnh sản phẩm",
+    "photo": "Ảnh {n}",
+    "selectedPhoto": "Ảnh {n} trên {total}",
+    "sizeGuide": {
+      "title": "Bảng size",
+      "size": "Size",
+      "foot": "Chiều dài chân (cm)",
+      "us": "Size US"
+    },
+    "sale": "Giảm {percent}%"
   },
   "footer": {
-    "rights": "Bảo lưu mọi quyền."
+    "tagline": "Đồng hồ và giày chính hãng, chọn lọc cho phong cách tối giản.",
+    "shop": "Cửa hàng",
+    "support": "Hỗ trợ",
+    "hotline": "Hotline",
+    "zalo": "Chat Zalo",
+    "address": "Địa chỉ cửa hàng sẽ được cập nhật",
+    "hours": "Mở cửa 9:00 – 21:00 mỗi ngày",
+    "rights": "Bảo lưu mọi quyền.",
+    "mockupNote": "Hình ảnh sản phẩm hiện là hình minh họa."
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "text": "Trang bạn tìm không tồn tại hoặc sản phẩm đã ngừng bán.",
+    "back": "Về trang chủ"
+  },
+  "error": {
+    "title": "Đã có lỗi xảy ra",
+    "text": "Vui lòng thử lại sau ít phút.",
+    "retry": "Thử lại"
   }
 }
