@@ -154,5 +154,103 @@
     "title": "Đã có lỗi xảy ra",
     "text": "Vui lòng thử lại sau ít phút.",
     "retry": "Thử lại"
+  },
+  "cart": {
+    "title": "Giỏ hàng",
+    "itemCount": "{count} sản phẩm",
+    "loading": "Đang tải giỏ hàng",
+    "loadError": "Không tải được giỏ hàng. Vui lòng thử lại.",
+    "retry": "Thử lại",
+    "empty": {
+      "title": "Giỏ hàng đang trống",
+      "text": "Hãy chọn vài sản phẩm bạn yêu thích.",
+      "cta": "Xem sản phẩm"
+    },
+    "line": {
+      "remove": "Xóa {name} khỏi giỏ hàng",
+      "decrease": "Giảm số lượng của {name}",
+      "increase": "Tăng số lượng của {name}",
+      "quantity": "Số lượng của {name}",
+      "unitPrice": "Đơn giá",
+      "lineTotal": "Thành tiền",
+      "maxReached": "Đã đạt số lượng tối đa",
+      "lowStock": "Chỉ còn {count} sản phẩm",
+      "stockAdjusted": "Số lượng đã được giảm còn {count} theo tồn kho.",
+      "removeUnavailable": "Xóa sản phẩm không còn bán khỏi giỏ hàng"
+    },
+    "unavailable": {
+      "title": "Không thể đặt sản phẩm này",
+      "text": "Sản phẩm không còn bán hoặc đã hết hàng. Vui lòng xóa khỏi giỏ để tiếp tục."
+    },
+    "summary": {
+      "title": "Tóm tắt đơn hàng",
+      "subtotal": "Tạm tính",
+      "shipping": "Phí vận chuyển",
+      "shippingNote": "Chúng tôi sẽ báo khi liên hệ với bạn",
+      "total": "Tổng tạm tính",
+      "checkout": "Tiếp tục đặt hàng",
+      "blocked": "Hãy xóa các sản phẩm không thể đặt để tiếp tục.",
+      "continueShopping": "Tiếp tục mua sắm"
+    }
+  },
+  "checkout": {
+    "title": "Đặt hàng",
+    "subtitle": "Không cần thanh toán trước. Chúng tôi sẽ gọi hoặc nhắn Zalo để xác nhận đơn hàng và phí vận chuyển.",
+    "noPayment": "Bạn chỉ thanh toán sau khi đã xác nhận với chúng tôi.",
+    "optional": "(không bắt buộc)",
+    "sections": {
+      "contact": "Thông tin liên hệ",
+      "address": "Địa chỉ nhận hàng",
+      "note": "Ghi chú"
+    },
+    "fields": {
+      "customerName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "email": "Email",
+      "preferredContact": "Chúng tôi nên liên hệ bạn qua",
+      "contactPhone": "Điện thoại",
+      "contactZalo": "Zalo",
+      "province": "Tỉnh / Thành phố",
+      "district": "Quận / Huyện",
+      "ward": "Phường / Xã",
+      "street": "Số nhà, tên đường",
+      "customerNote": "Ghi chú cho cửa hàng"
+    },
+    "errors": {
+      "required": "Vui lòng nhập thông tin này.",
+      "invalid_phone": "Số điện thoại chưa đúng. Ví dụ: 0912 345 678.",
+      "invalid_email": "Email chưa đúng.",
+      "too_long": "Nội dung quá dài.",
+      "invalid": "Giá trị chưa hợp lệ."
+    },
+    "formError": {
+      "title": "Chưa gửi được đơn hàng",
+      "INVALID_INPUT": "Vui lòng kiểm tra các ô được đánh dấu.",
+      "EMPTY_CART": "Giỏ hàng đang trống.",
+      "RATE_LIMITED": "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau {minutes} phút.",
+      "OUT_OF_STOCK": "“{name}” không đủ hàng. Vui lòng giảm số lượng hoặc xóa khỏi giỏ.",
+      "VARIANT_UNAVAILABLE": "“{name}” không còn bán. Vui lòng xóa khỏi giỏ.",
+      "VARIANT_NOT_FOUND": "Một sản phẩm trong giỏ không còn tồn tại. Vui lòng xóa khỏi giỏ.",
+      "UNKNOWN": "Có lỗi xảy ra và đơn hàng chưa được gửi. Vui lòng thử lại.",
+      "reviewCart": "Xem lại giỏ hàng"
+    },
+    "submit": "Gửi yêu cầu đặt hàng",
+    "submitting": "Đang gửi...",
+    "summaryTitle": "Đơn hàng của bạn",
+    "editCart": "Sửa giỏ hàng",
+    "honeypot": "Không điền vào ô này"
+  },
+  "orderSuccess": {
+    "title": "Cảm ơn bạn đã đặt hàng!",
+    "text": "Lisva đã nhận được yêu cầu và sẽ liên hệ với bạn sớm để xác nhận đơn hàng và phí vận chuyển.",
+    "codeLabel": "Mã đơn hàng",
+    "copy": "Sao chép mã",
+    "copied": "Đã sao chép",
+    "saveHint": "Hãy lưu lại mã này để tiện trao đổi với chúng tôi.",
+    "contactTitle": "Cần hỗ trợ ngay?",
+    "hotline": "Hotline",
+    "zalo": "Chat Zalo",
+    "continue": "Tiếp tục mua sắm",
+    "close": "Đóng"
   }
 }

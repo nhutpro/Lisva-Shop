@@ -273,6 +273,8 @@ model Order {
   id               String               @id @default(cuid())
   /// Short human code shown to the customer, e.g. LV-2611-7KQ2.
   code             String               @unique
+  /// Random key created by the checkout page; a repeated submit with the same key returns the same order.
+  idempotencyKey   String?              @unique
   userId           String?
   user             User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   customerName     String

@@ -51,7 +51,16 @@ Next.js 16 (App Router) + TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), lucid
 - List filters are a plain GET form; the query string is parsed by `parseListParams` (safe fallbacks) and built with `listParamsToSearch`.
 - Variant picker rules are pure functions in `src/lib/catalog/variant-selection.ts`; the cart store (`src/lib/cart/store.ts`) holds only `{ variantId, quantity }` and is rehydrated by `CartHydrator`.
 - `npm run build` needs the database running. Component tests need no extra setup (`vitest.setup.ts` cleans up after each test).
-- The cart page (`/[lang]/cart`) does not exist yet (spec 003); links to it 404 until then.
+
+## Cart and order request (spec 003)
+- Pages: `/[lang]/cart` and `/[lang]/checkout` (both `noindex`). No online payment in release 1: the shopper sends an order *request*, the owner is alerted on Telegram and contacts them.
+- The browser cart holds only `{ variantId, quantity }`. `useCartLines()` (`src/lib/cart/use-cart-lines.ts`) joins it with current names, prices and stock from the `loadCartLines` server action (`getCartLines` in `src/lib/catalog/cart-lines.ts`), lowers quantities above stock, and flags lines that cannot be ordered.
+- Sending an order: `submitOrderAction` (thin server action) calls `submitOrder` (`src/lib/orders/submit-order.ts`): honeypot, validation (Zod, field-level codes), rate limit (`src/lib/rate-limit.ts`, in memory, counts only well-formed requests), then `createOrderOnce`. It never throws; errors are `{ ok: false, error: { code, ... } }` and the page maps codes to translated text.
+- `createOrderOnce` is idempotent through `Order.idempotencyKey` (random key per checkout visit): a repeat or a race returns the same order and `created: false`.
+- Telegram: `src/lib/telegram.ts` (best effort, never throws, never logs the token) and `src/lib/orders/alert.ts`. The alert is scheduled with `after()` only for a newly created order. Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` (see `.env.example`); without them the alert is skipped and a warning is logged. `TELEGRAM_API_BASE_URL` points to a fake server for tests.
+- The confirmation pop-up is a native `<dialog>` (`order-success-dialog.tsx`); the page keeps showing the confirmation behind it after the cart is cleared. jsdom lacks `showModal`, so `vitest.setup.ts` adds a small stand-in.
+- Customer phone and address must never be written to server logs; Telegram messages (owner's private chat) are the only place they are sent.
+- Tests: DB tests for `createOrderOnce`, `getCartLines` and `submitOrder`; component tests for the cart and checkout views. The full browser flow was verified with Playwright against a fake Telegram server (scripts were kept outside the repo).
 
 ## Environment notes
 - Local Node is 20.13. Vitest is pinned to 4.x, Vite to 6.x and jsdom to 26 because newer versions need Node 22+. Upgrading Node to 22 LTS would lift these pins.

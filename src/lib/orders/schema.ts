@@ -25,6 +25,11 @@ export const orderInputSchema = z.object({
   customerNote: z.preprocess(emptyToUndefined, z.string().trim().max(500).optional()),
   locale: z.enum(["vi", "en"]).default("vi"),
   userId: z.string().optional(),
+  /** Random key from the checkout page. Submitting the same key again returns the same order. */
+  idempotencyKey: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{8,64}$/)
+    .optional(),
   items: z
     .array(
       z.object({

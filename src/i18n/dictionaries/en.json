@@ -154,5 +154,103 @@
     "title": "Something went wrong",
     "text": "Please try again in a few minutes.",
     "retry": "Try again"
+  },
+  "cart": {
+    "title": "Cart",
+    "itemCount": "{count} items",
+    "loading": "Loading your cart",
+    "loadError": "We could not load your cart. Please try again.",
+    "retry": "Try again",
+    "empty": {
+      "title": "Your cart is empty",
+      "text": "Pick a few products you like.",
+      "cta": "Browse products"
+    },
+    "line": {
+      "remove": "Remove {name} from the cart",
+      "decrease": "Decrease the quantity of {name}",
+      "increase": "Increase the quantity of {name}",
+      "quantity": "Quantity of {name}",
+      "unitPrice": "Unit price",
+      "lineTotal": "Total",
+      "maxReached": "Maximum quantity reached",
+      "lowStock": "Only {count} left",
+      "stockAdjusted": "The quantity was lowered to {count} to match the stock.",
+      "removeUnavailable": "Remove the unavailable item from the cart"
+    },
+    "unavailable": {
+      "title": "This item cannot be ordered",
+      "text": "It is no longer sold or is sold out. Please remove it from the cart to continue."
+    },
+    "summary": {
+      "title": "Order summary",
+      "subtotal": "Subtotal",
+      "shipping": "Shipping",
+      "shippingNote": "We will tell you when we contact you",
+      "total": "Estimated total",
+      "checkout": "Continue to order",
+      "blocked": "Remove the items that cannot be ordered to continue.",
+      "continueShopping": "Continue shopping"
+    }
+  },
+  "checkout": {
+    "title": "Place your order",
+    "subtitle": "No payment is needed now. We will call or message you on Zalo to confirm your order and the shipping fee.",
+    "noPayment": "You only pay after confirming with us.",
+    "optional": "(optional)",
+    "sections": {
+      "contact": "Contact details",
+      "address": "Delivery address",
+      "note": "Note"
+    },
+    "fields": {
+      "customerName": "Full name",
+      "phone": "Phone number",
+      "email": "Email",
+      "preferredContact": "How should we contact you?",
+      "contactPhone": "Phone",
+      "contactZalo": "Zalo",
+      "province": "Province / City",
+      "district": "District",
+      "ward": "Ward / Commune",
+      "street": "House number, street",
+      "customerNote": "Note for the shop"
+    },
+    "errors": {
+      "required": "Please fill in this field.",
+      "invalid_phone": "This phone number looks wrong. Example: 0912 345 678.",
+      "invalid_email": "This email looks wrong.",
+      "too_long": "This is too long.",
+      "invalid": "This value is not valid."
+    },
+    "formError": {
+      "title": "Your order was not sent",
+      "INVALID_INPUT": "Please check the highlighted fields.",
+      "EMPTY_CART": "Your cart is empty.",
+      "RATE_LIMITED": "You have sent too many requests. Please try again in {minutes} minutes.",
+      "OUT_OF_STOCK": "“{name}” is not available in that quantity. Please lower the quantity or remove it from the cart.",
+      "VARIANT_UNAVAILABLE": "“{name}” is no longer sold. Please remove it from the cart.",
+      "VARIANT_NOT_FOUND": "An item in your cart no longer exists. Please remove it from the cart.",
+      "UNKNOWN": "Something went wrong and your order was not sent. Please try again.",
+      "reviewCart": "Review your cart"
+    },
+    "submit": "Send order request",
+    "submitting": "Sending...",
+    "summaryTitle": "Your order",
+    "editCart": "Edit cart",
+    "honeypot": "Do not fill in this field"
+  },
+  "orderSuccess": {
+    "title": "Thank you for your order!",
+    "text": "Lisva has received your request and will contact you soon to confirm the order and the shipping fee.",
+    "codeLabel": "Order code",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "saveHint": "Please keep this code to refer to when we talk.",
+    "contactTitle": "Need help right away?",
+    "hotline": "Hotline",
+    "zalo": "Chat on Zalo",
+    "continue": "Continue shopping",
+    "close": "Close"
   }
 }

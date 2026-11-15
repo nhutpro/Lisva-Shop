@@ -6,18 +6,31 @@ import { orderInputSchema } from "./schema";
 
 const MAX_CODE_ATTEMPTS = 5;
 
-const isCodeCollision = (e: unknown) =>
+const collidesOn = (e: unknown, column: string) =>
   e instanceof Prisma.PrismaClientKnownRequestError &&
   e.code === "P2002" &&
-  JSON.stringify(e.meta?.target ?? "").includes("code");
+  JSON.stringify(e.meta?.target ?? "").includes(column);
+
+const findByKey = (db: PrismaClient, idempotencyKey: string) =>
+  db.order.findUnique({ where: { idempotencyKey }, include: { items: true } });
 
 /**
  * Creates an order request. Prices and names always come from the database, never from the browser.
  * Stock is only checked here; it is deducted later, when the owner confirms (see changeOrderStatus).
+ *
+ * With an `idempotencyKey`, submitting the same key again (double click, retry, a race between two
+ * requests) returns the order that already exists and `created: false`, so callers can skip side effects
+ * such as the Telegram alert.
+ *
  * Throws ZodError for invalid input and OrderError for business problems.
  */
-export async function createOrder(db: PrismaClient, rawInput: unknown) {
+export async function createOrderOnce(db: PrismaClient, rawInput: unknown) {
   const input = orderInputSchema.parse(rawInput);
+
+  if (input.idempotencyKey) {
+    const existing = await findByKey(db, input.idempotencyKey);
+    if (existing) return { order: existing, created: false };
+  }
 
   // The same variant on two lines becomes one line.
   const quantities = new Map<string, number>();
@@ -27,7 +40,7 @@ export async function createOrder(db: PrismaClient, rawInput: unknown) {
 
   for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
     try {
-      return await db.$transaction(async (tx) => {
+      const order = await db.$transaction(async (tx) => {
         const variants = await tx.productVariant.findMany({
           where: { id: { in: [...quantities.keys()] } },
           include: { product: { include: { images: true } }, color: true, size: true },
@@ -62,6 +75,7 @@ export async function createOrder(db: PrismaClient, rawInput: unknown) {
         return tx.order.create({
           data: {
             code: generateOrderCode(),
+            idempotencyKey: input.idempotencyKey,
             userId: input.userId,
             customerName: input.customerName,
             phone: input.phone,
@@ -81,10 +95,21 @@ export async function createOrder(db: PrismaClient, rawInput: unknown) {
           include: { items: true },
         });
       });
+      return { order, created: true };
     } catch (e) {
-      if (isCodeCollision(e)) continue;
+      if (collidesOn(e, "code")) continue;
+      // Another request with the same key won the race: return its order instead of failing.
+      if (input.idempotencyKey && collidesOn(e, "idempotencyKey")) {
+        const existing = await findByKey(db, input.idempotencyKey);
+        if (existing) return { order: existing, created: false };
+      }
       throw e;
     }
   }
   throw new OrderError("CODE_GENERATION_FAILED");
+}
+
+/** Same as createOrderOnce, returning only the order. */
+export async function createOrder(db: PrismaClient, rawInput: unknown) {
+  return (await createOrderOnce(db, rawInput)).order;
 }
