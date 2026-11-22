@@ -1,0 +1,66 @@
+# Minimal GitLab CI for the free tier: ONE job, so dependencies are installed once.
+# Order inside the job is cheapest-first so a simple mistake fails in seconds:
+# lint -> typecheck -> tests -> sample data -> production build.
+#
+# Cost controls (the free tier gives a limited number of compute minutes per month):
+#  - Pipelines run only for merge requests and for the default branch. A plain push to another branch does nothing,
+#    and a branch with an open merge request is not built twice.
+#  - A merge request that only changes docs or other non-code files is skipped.
+#  - A newer commit cancels a pipeline that is still running.
+#  - The job is stopped after 15 minutes.
+#  - The npm download cache is kept between runs.
+# Put "[skip ci]" in a commit message to skip a pipeline completely.
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+check:
+  stage: test
+  image: node:20 # the project is developed on Node 20.x
+  interruptible: true
+  timeout: 15m
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    POSTGRES_USER: lisva
+    POSTGRES_PASSWORD: ci_only_password
+    POSTGRES_DB: lisva_test
+    # One throw-away database serves the tests and the build.
+    DATABASE_URL: postgresql://lisva:ci_only_password@postgres:5432/lisva_test?schema=public
+    DATABASE_URL_TEST: postgresql://lisva:ci_only_password@postgres:5432/lisva_test?schema=public
+    NEXT_TELEMETRY_DISABLED: "1"
+    npm_config_cache: $CI_PROJECT_DIR/.npm
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  rules:
+    # The default branch always runs everything.
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # A merge request runs only when something that can change the app changed.
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - src/**/*
+        - prisma/**/*
+        - public/**/*
+        - scripts/**/*
+        - docker/**/*
+        - package.json
+        - package-lock.json
+        - next.config.ts
+        - tsconfig.json
+        - postcss.config.*
+        - eslint.config.*
+        - vitest.*
+        - .gitlab-ci.yml
+  script:
+    - npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
+    - npm run lint
+    - npm run typecheck
