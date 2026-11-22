@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
-import { submitOrderAction } from "@/app/[lang]/checkout/actions";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { loadCheckoutDefaults, submitOrderAction, type CheckoutDefaults } from "@/app/[lang]/checkout/actions";
 import { localePath, type Locale } from "@/i18n/config";
 import { format } from "@/i18n/format";
 import type { Dictionary } from "@/i18n/get-dictionary";
@@ -31,6 +31,19 @@ export function CheckoutView({ locale, labels, contact }: Props) {
   const errorRef = useRef<HTMLDivElement>(null);
   // One key per visit to this page: sending the same order twice (double click, retry) creates it once.
   const idempotencyKey = useRef<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Details of a signed-in shopper (undefined while loading, null for a guest).
+  const [defaults, setDefaults] = useState<CheckoutDefaults | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    loadCheckoutDefaults()
+      .then((d) => !cancelled && setDefaults(d))
+      .catch(() => !cancelled && setDefaults(null));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [state, formAction, pending] = useActionState(
     async (previous: CheckoutState, formData: FormData): Promise<CheckoutState> => {
@@ -72,12 +85,13 @@ export function CheckoutView({ locale, labels, contact }: Props) {
           hotline={contact.hotline}
           zaloUrl={contact.zaloUrl}
           productsHref={localePath(locale, "/products")}
+          orderHref={defaults ? localePath(locale, `/account/orders/${state.code}`) : undefined}
         />
       </>
     );
   }
 
-  if (cart.loading) return <CartSkeleton label={tc.loading} />;
+  if (cart.loading || defaults === undefined) return <CartSkeleton label={tc.loading} />;
   if (cart.error) {
     return (
       <div role="alert" className="rounded-lg bg-surface px-6 py-14 text-center shadow-soft">
@@ -90,7 +104,37 @@ export function CheckoutView({ locale, labels, contact }: Props) {
   }
   if (cart.empty) return <EmptyCart locale={locale} labels={tc} />;
 
-  const values = state.status === "error" ? state.values : (state.values ?? {});
+  // A signed-in shopper starts with their details and default address filled in.
+  const preferred = defaults?.addresses[0];
+  const prefill: Partial<Record<FieldName, string>> = defaults
+    ? {
+        customerName: preferred?.recipientName ?? defaults.user.name ?? "",
+        phone: preferred?.phone ?? defaults.user.phone ?? "",
+        email: defaults.user.email,
+        province: preferred?.province ?? "",
+        district: preferred?.district ?? "",
+        ward: preferred?.ward ?? "",
+        street: preferred?.street ?? "",
+      }
+    : {};
+  const values = state.status === "error" ? state.values : { ...prefill, ...(state.values ?? {}) };
+
+  // Picking a saved address fills the address fields. The fields are plain inputs, so set them directly.
+  const fillFromAddress = (addressId: string) => {
+    const address = defaults?.addresses.find((a) => a.id === addressId);
+    const form = formRef.current;
+    if (!address || !form) return;
+    const set = (name: string, value: string) => {
+      const element = form.elements.namedItem(name);
+      if (element instanceof HTMLInputElement) element.value = value;
+    };
+    set("customerName", address.recipientName);
+    set("phone", address.phone);
+    set("province", address.province);
+    set("district", address.district);
+    set("ward", address.ward);
+    set("street", address.street);
+  };
   const fieldErrors = state.status === "error" ? (state.error.fieldErrors ?? {}) : {};
   const error = (name: FieldName) => (fieldErrors[name] ? t.errors[fieldErrors[name]] : undefined);
   const value = (name: FieldName) => values[name] ?? "";
@@ -99,8 +143,16 @@ export function CheckoutView({ locale, labels, contact }: Props) {
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
-      <form action={formAction} noValidate aria-busy={pending} className="space-y-8">
+      <form ref={formRef} action={formAction} noValidate aria-busy={pending} className="space-y-8">
         <p className="text-muted-foreground">{t.subtitle}</p>
+        {defaults === null && (
+          <p className="text-sm text-muted-foreground">
+            {t.loginHint}{" "}
+            <Link href={`${localePath(locale, "/login")}?next=${encodeURIComponent(localePath(locale, "/checkout"))}`} className="font-medium text-foreground underline underline-offset-4">
+              {t.loginLink}
+            </Link>
+          </p>
+        )}
 
         {state.status === "error" && (
           <div
@@ -179,12 +231,39 @@ export function CheckoutView({ locale, labels, contact }: Props) {
 
         <fieldset className="space-y-4">
           <legend className="mb-1 text-2xl font-medium">{t.sections.address}</legend>
+          {defaults && defaults.addresses.length > 0 && (
+            <div>
+              <label htmlFor="savedAddress" className="mb-1.5 block text-sm font-medium">
+                {t.savedAddresses}
+              </label>
+              {/* Not part of the order: it only fills the fields below. */}
+              <select
+                id="savedAddress"
+                defaultValue=""
+                onChange={(e) => e.target.value && fillFromAddress(e.target.value)}
+                className="h-12 w-full rounded-sm border border-border bg-background px-4 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="">{t.chooseAddress}</option>
+                {defaults.addresses.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {[a.recipientName, a.street, a.district].join(" · ")}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-3">
             <CheckoutField id="province" name="province" label={t.fields.province} defaultValue={value("province")} error={error("province")} autoComplete="address-level1" maxLength={100} required />
             <CheckoutField id="district" name="district" label={t.fields.district} defaultValue={value("district")} error={error("district")} autoComplete="address-level2" maxLength={100} required />
             <CheckoutField id="ward" name="ward" label={t.fields.ward} defaultValue={value("ward")} error={error("ward")} maxLength={100} required />
           </div>
           <CheckoutField id="street" name="street" label={t.fields.street} defaultValue={value("street")} error={error("street")} autoComplete="street-address" maxLength={200} required />
+          {defaults && (
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+              <input type="checkbox" name="saveAddress" defaultChecked={defaults.addresses.length === 0} className="size-4 accent-gold" />
+              {t.saveAddress}
+            </label>
+          )}
         </fieldset>
 
         <fieldset>

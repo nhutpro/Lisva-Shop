@@ -4,6 +4,7 @@ export type OrderErrorCode =
   | "OUT_OF_STOCK"
   | "ORDER_NOT_FOUND"
   | "INVALID_TRANSITION"
+  | "ORDER_CLOSED"
   | "CONFLICT"
   | "CODE_GENERATION_FAILED";
 

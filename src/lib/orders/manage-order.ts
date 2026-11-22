@@ -22,10 +22,16 @@ export async function changeOrderStatus(
   actorId: string | null = null,
 ) {
   return db.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
     if (!order) throw new OrderError("ORDER_NOT_FOUND", { orderId });
     if (!allowedTransitions[order.status].includes(toStatus)) {
-      throw new OrderError("INVALID_TRANSITION", { from: order.status, to: toStatus });
+      throw new OrderError("INVALID_TRANSITION", {
+        from: order.status,
+        to: toStatus,
+      });
     }
 
     const deduct = toStatus === "CONFIRMED" && !order.stockDeducted;
@@ -48,7 +54,8 @@ export async function changeOrderStatus(
           where: { id: item.variantId, stock: { gte: item.quantity } },
           data: { stock: { decrement: item.quantity } },
         });
-        if (r.count === 0) throw new OrderError("OUT_OF_STOCK", { variantId: item.variantId });
+        if (r.count === 0)
+          throw new OrderError("OUT_OF_STOCK", { variantId: item.variantId });
       } else if (restore) {
         await tx.productVariant.update({
           where: { id: item.variantId },
@@ -58,7 +65,12 @@ export async function changeOrderStatus(
     }
 
     await tx.orderStatusHistory.create({
-      data: { orderId, fromStatus: order.status, toStatus, changedById: actorId },
+      data: {
+        orderId,
+        fromStatus: order.status,
+        toStatus,
+        changedById: actorId,
+      },
     });
     return tx.order.findUniqueOrThrow({ where: { id: orderId } });
   });
@@ -66,17 +78,27 @@ export async function changeOrderStatus(
 
 /** Clears the "new" badge the first time the owner opens an order. */
 export async function markOrderSeen(db: PrismaClient, orderId: string) {
-  await db.order.updateMany({ where: { id: orderId, adminSeenAt: null }, data: { adminSeenAt: new Date() } });
+  await db.order.updateMany({
+    where: { id: orderId, adminSeenAt: null },
+    data: { adminSeenAt: new Date() },
+  });
 }
 
-/** The owner records that the customer paid (manual, release 1). */
+/**
+ * The owner records that the customer paid (manual, release 1). Not possible on a cancelled order, and a second
+ * click (or a second tab) changes nothing: the first payment record, with its date, is kept.
+ */
 export async function recordPayment(
   db: PrismaClient,
   orderId: string,
   payment: { method: PaymentMethod; note?: string },
 ) {
-  return db.order.update({
-    where: { id: orderId },
+  const updated = await db.order.updateMany({
+    where: {
+      id: orderId,
+      paymentStatus: "UNPAID",
+      status: { not: "CANCELLED" },
+    },
     data: {
       paymentStatus: "PAID",
       paymentMethod: payment.method,
@@ -84,14 +106,27 @@ export async function recordPayment(
       paidAt: new Date(),
     },
   });
+  const order = await db.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new OrderError("ORDER_NOT_FOUND", { orderId });
+  if (updated.count === 0 && order.status === "CANCELLED")
+    throw new OrderError("ORDER_CLOSED", { orderId });
+  return order;
 }
 
 /** Sets the shipping fee quoted to the customer and updates the total. */
-export async function setShippingFee(db: PrismaClient, orderId: string, shippingFee: number) {
-  if (!Number.isInteger(shippingFee) || shippingFee < 0) throw new RangeError("shippingFee must be a whole VND amount >= 0");
+export async function setShippingFee(
+  db: PrismaClient,
+  orderId: string,
+  shippingFee: number,
+) {
+  if (!Number.isInteger(shippingFee) || shippingFee < 0)
+    throw new RangeError("shippingFee must be a whole VND amount >= 0");
   return db.$transaction(async (tx) => {
     const order = await tx.order.findUnique({ where: { id: orderId } });
     if (!order) throw new OrderError("ORDER_NOT_FOUND", { orderId });
+    // A finished order keeps the total the customer was given.
+    if (order.status === "COMPLETED" || order.status === "CANCELLED")
+      throw new OrderError("ORDER_CLOSED", { orderId });
     return tx.order.update({
       where: { id: orderId },
       data: { shippingFee, total: order.subtotal + shippingFee },
@@ -99,6 +134,13 @@ export async function setShippingFee(db: PrismaClient, orderId: string, shipping
   });
 }
 
-export async function addOrderNote(db: PrismaClient, orderId: string, body: string, authorId: string | null = null) {
-  return db.orderNote.create({ data: { orderId, body: body.trim(), authorId } });
+export async function addOrderNote(
+  db: PrismaClient,
+  orderId: string,
+  body: string,
+  authorId: string | null = null,
+) {
+  return db.orderNote.create({
+    data: { orderId, body: body.trim(), authorId },
+  });
 }

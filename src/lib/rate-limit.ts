@@ -11,11 +11,28 @@ const MAX_KEYS = 10_000;
 export function createRateLimiter({ limit, windowMs, now = Date.now }: Options) {
   const hits = new Map<string, number[]>();
 
+  const recentFor = (key: string, time: number) => (hits.get(key) ?? []).filter((t) => time - t < windowMs);
+
   return {
-    /** Records an attempt when it is allowed. */
+    /** Whether one more attempt would be allowed, without counting it. */
+    peek(key: string): RateLimitResult {
+      const time = now();
+      const recent = recentFor(key, time);
+      return recent.length >= limit ? { allowed: false, retryAfterMs: windowMs - (time - recent[0]) } : { allowed: true };
+    },
+    /** Counts an attempt (for example a failed sign-in) without checking. */
+    record(key: string) {
+      const time = now();
+      hits.set(key, [...recentFor(key, time), time]);
+    },
+    /** Forgets a key (for example after a successful sign-in). */
+    clear(key: string) {
+      hits.delete(key);
+    },
+    /** Checks, and counts the attempt when it is allowed. */
     check(key: string): RateLimitResult {
       const time = now();
-      const recent = (hits.get(key) ?? []).filter((t) => time - t < windowMs);
+      const recent = recentFor(key, time);
 
       if (recent.length >= limit) {
         hits.set(key, recent);

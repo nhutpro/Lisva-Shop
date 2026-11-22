@@ -6,6 +6,7 @@ import { LanguageSwitcherStatic } from "@/components/language-switcher-static";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { localePath } from "@/i18n/config";
 import { siteConfig } from "@/lib/site-config";
+import { AccountLinks, AccountMenu } from "./account-menu";
 import { CartLink } from "./cart-link";
 import { MobileMenu } from "./mobile-menu";
 import { SearchForm } from "./search-form";
@@ -51,6 +52,15 @@ export async function SiteHeader() {
         <Suspense fallback={<LanguageSwitcherStatic current={locale} label={dict.language.label} names={names} />}>
           <LanguageSwitcherWithQuery current={locale} label={dict.language.label} names={names} />
         </Suspense>
+        <Suspense
+          fallback={
+            <Link href={localePath(locale, "/login")} className="hidden h-11 items-center rounded-full px-4 text-sm font-medium sm:inline-flex">
+              {dict.auth.menu.login}
+            </Link>
+          }
+        >
+          <AccountMenu locale={locale} dict={dict} />
+        </Suspense>
         <CartLink href={localePath(locale, "/cart")} label={dict.nav.cart} labelWithCount={dict.nav.cartCount} />
         <Suspense
           fallback={
@@ -72,6 +82,9 @@ export async function SiteHeader() {
                   {l.label}
                 </Link>
               ))}
+              <Suspense fallback={null}>
+                <AccountLinks locale={locale} dict={dict} />
+              </Suspense>
             </nav>
           </MobileMenu>
         </Suspense>

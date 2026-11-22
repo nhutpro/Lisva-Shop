@@ -14,7 +14,8 @@ export const FIELD_NAMES = [
 export type FieldName = (typeof FIELD_NAMES)[number];
 
 /** Why one field was rejected. The page turns it into a translated message. */
-export type FieldErrorCode = "required" | "invalid_phone" | "invalid_email" | "too_long" | "invalid";
+export type FieldErrorCode =
+  "required" | "invalid_phone" | "invalid_email" | "too_long" | "invalid";
 export type FieldErrors = Partial<Record<FieldName, FieldErrorCode>>;
 
 export type SubmitErrorCode =
@@ -43,4 +44,8 @@ export type SubmitResult =
 export type CheckoutState =
   | { status: "idle"; values?: Partial<Record<FieldName, string>> }
   | { status: "success"; code: string }
-  | { status: "error"; error: Extract<SubmitResult, { ok: false }>["error"]; values: Partial<Record<FieldName, string>> };
+  | {
+      status: "error";
+      error: Extract<SubmitResult, { ok: false }>["error"];
+      values: Partial<Record<FieldName, string>>;
+    };

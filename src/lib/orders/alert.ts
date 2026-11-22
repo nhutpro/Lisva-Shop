@@ -1,5 +1,9 @@
 import { getTelegramConfig } from "../env";
-import { formatOrderAlert, sendTelegramMessage, type OrderAlertInput } from "../telegram";
+import {
+  formatOrderAlert,
+  sendTelegramMessage,
+  type OrderAlertInput,
+} from "../telegram";
 
 /** Tells the owner about a new order on Telegram. Best effort: never throws. */
 export async function sendOrderAlert(order: OrderAlertInput): Promise<void> {

@@ -6,28 +6,79 @@ import {
   missingOptions,
   optionAvailability,
   resolveVariant,
+  defaultSizeId,
+  sizesForColor,
   selectOption,
   stockState,
 } from "./variant-selection";
 import type { ColorData, ImageData, SizeData, VariantData } from "./types";
 
-const black: ColorData = { id: "c-blk", nameVi: "Đen", nameEn: "Black", hex: "#111" };
-const white: ColorData = { id: "c-wht", nameVi: "Trắng", nameEn: "White", hex: "#fff" };
-const s41: SizeData = { id: "s41", label: "41", type: "SHOE", footLengthCm: 25.5, usSize: "8" };
-const s42: SizeData = { id: "s42", label: "42", type: "SHOE", footLengthCm: 26.5, usSize: "9" };
+const black: ColorData = {
+  id: "c-blk",
+  nameVi: "Đen",
+  nameEn: "Black",
+  hex: "#111",
+};
+const white: ColorData = {
+  id: "c-wht",
+  nameVi: "Trắng",
+  nameEn: "White",
+  hex: "#fff",
+};
+const s41: SizeData = {
+  id: "s41",
+  label: "41",
+  type: "SHOE",
+  footLengthCm: 25.5,
+  usSize: "8",
+};
+const s42: SizeData = {
+  id: "s42",
+  label: "42",
+  type: "SHOE",
+  footLengthCm: 26.5,
+  usSize: "9",
+};
 
 // Black has 41 and 42, White only 42 (sold out).
 const variants: VariantData[] = [
-  { id: "v1", sku: "BLK-41", colorId: "c-blk", sizeId: "s41", price: 2_000_000, stock: 3 },
-  { id: "v2", sku: "BLK-42", colorId: "c-blk", sizeId: "s42", price: 2_200_000, stock: 0 },
-  { id: "v3", sku: "WHT-42", colorId: "c-wht", sizeId: "s42", price: 2_000_000, stock: 0 },
+  {
+    id: "v1",
+    sku: "BLK-41",
+    colorId: "c-blk",
+    sizeId: "s41",
+    price: 2_000_000,
+    stock: 3,
+  },
+  {
+    id: "v2",
+    sku: "BLK-42",
+    colorId: "c-blk",
+    sizeId: "s42",
+    price: 2_200_000,
+    stock: 0,
+  },
+  {
+    id: "v3",
+    sku: "WHT-42",
+    colorId: "c-wht",
+    sizeId: "s42",
+    price: 2_000_000,
+    stock: 0,
+  },
 ];
 const both = { colors: [black, white], sizes: [s41, s42] };
 const none = { colors: [], sizes: [] };
 const empty = { colorId: null, sizeId: null };
 
 describe("stockState", () => {
-  it.each([[0, "sold-out"], [-1, "sold-out"], [1, "low"], [5, "low"], [6, "in-stock"]])("%i is %s", (n, s) => {
+  it.each([
+    [0, "sold-out"],
+    [-1, "sold-out"],
+    [1, "low"],
+    [5, "low"],
+    [6, "in-stock"],
+  ])("%i is %s", (n, s) => {
     expect(stockState(n)).toBe(s);
   });
 });
@@ -35,72 +86,286 @@ describe("stockState", () => {
 describe("missingOptions and resolveVariant", () => {
   it("asks for both axes when the product has colors and sizes", () => {
     expect(missingOptions(both, empty)).toEqual(["color", "size"]);
-    expect(missingOptions(both, { colorId: "c-blk", sizeId: null })).toEqual(["size"]);
-    expect(resolveVariant(variants, both, { colorId: "c-blk", sizeId: null })).toBeNull();
+    expect(missingOptions(both, { colorId: "c-blk", sizeId: null })).toEqual([
+      "size",
+    ]);
+    expect(
+      resolveVariant(variants, both, { colorId: "c-blk", sizeId: null }),
+    ).toBeNull();
   });
 
   it("resolves the exact variant once everything is chosen", () => {
-    expect(resolveVariant(variants, both, { colorId: "c-blk", sizeId: "s42" })?.sku).toBe("BLK-42");
+    expect(
+      resolveVariant(variants, both, { colorId: "c-blk", sizeId: "s42" })?.sku,
+    ).toBe("BLK-42");
   });
 
   it("returns null for a combination that does not exist", () => {
-    expect(resolveVariant(variants, both, { colorId: "c-wht", sizeId: "s41" })).toBeNull();
+    expect(
+      resolveVariant(variants, both, { colorId: "c-wht", sizeId: "s41" }),
+    ).toBeNull();
   });
 
   it("works with only colors, only sizes, or neither", () => {
-    const colorOnly: VariantData[] = [{ id: "a", sku: "A", colorId: "c-blk", sizeId: null, price: 1, stock: 1 }];
-    expect(resolveVariant(colorOnly, { colors: [black], sizes: [] }, { colorId: "c-blk", sizeId: null })?.sku).toBe("A");
+    const colorOnly: VariantData[] = [
+      { id: "a", sku: "A", colorId: "c-blk", sizeId: null, price: 1, stock: 1 },
+    ];
+    expect(
+      resolveVariant(
+        colorOnly,
+        { colors: [black], sizes: [] },
+        { colorId: "c-blk", sizeId: null },
+      )?.sku,
+    ).toBe("A");
 
-    const sizeOnly: VariantData[] = [{ id: "b", sku: "B", colorId: null, sizeId: "s41", price: 1, stock: 1 }];
-    expect(resolveVariant(sizeOnly, { colors: [], sizes: [s41] }, { colorId: null, sizeId: "s41" })?.sku).toBe("B");
+    const sizeOnly: VariantData[] = [
+      { id: "b", sku: "B", colorId: null, sizeId: "s41", price: 1, stock: 1 },
+    ];
+    expect(
+      resolveVariant(
+        sizeOnly,
+        { colors: [], sizes: [s41] },
+        { colorId: null, sizeId: "s41" },
+      )?.sku,
+    ).toBe("B");
 
-    const plain: VariantData[] = [{ id: "d", sku: "D", colorId: null, sizeId: null, price: 590_000, stock: 12 }];
+    const plain: VariantData[] = [
+      {
+        id: "d",
+        sku: "D",
+        colorId: null,
+        sizeId: null,
+        price: 590_000,
+        stock: 12,
+      },
+    ];
     expect(missingOptions(none, empty)).toEqual([]);
     expect(resolveVariant(plain, none, empty)?.sku).toBe("D");
   });
 });
 
 describe("initialSelection", () => {
-  it("selects an axis that has a single choice", () => {
-    expect(initialSelection(variants, { colors: [black], sizes: [s41, s42] })).toEqual({ colorId: "c-blk", sizeId: null });
-    expect(initialSelection(variants, both)).toEqual(empty);
+  it("opens on the first color that has stock, with a size in stock for it", () => {
+    // Black: 41 in stock, 42 sold out. White: 42 sold out.
+    expect(initialSelection(variants, both)).toEqual({
+      colorId: "c-blk",
+      sizeId: "s41",
+    });
+    // Black sold out entirely: White is next (even if its only size is sold out, the first color with stock wins).
+    const blackGone = variants.map((v) =>
+      v.colorId === "c-blk" ? { ...v, stock: 0 } : { ...v, stock: 4 },
+    );
+    expect(initialSelection(blackGone, both)).toEqual({
+      colorId: "c-wht",
+      sizeId: "s42",
+    });
+  });
+
+  it("selects a single size when the product has no colors, and nothing for a plain product", () => {
+    const noColor: VariantData[] = [
+      {
+        id: "n1",
+        sku: "N-41",
+        colorId: null,
+        sizeId: "s41",
+        price: 1,
+        stock: 1,
+      },
+    ];
+    expect(initialSelection(noColor, { colors: [], sizes: [s41] })).toEqual({
+      colorId: null,
+      sizeId: "s41",
+    });
+    expect(
+      initialSelection(noColor, { colors: [], sizes: [s41, s42] }),
+    ).toEqual(empty);
     expect(initialSelection([], none)).toEqual(empty);
+  });
+});
+
+describe("defaultSizeId and sizesForColor", () => {
+  it("prefers the current size when the color has it in stock, else the first size in stock", () => {
+    expect(defaultSizeId(variants, "c-blk", "s41")).toBe("s41");
+    expect(defaultSizeId(variants, "c-blk", "s42")).toBe("s41"); // 42 is sold out in Black
+    expect(defaultSizeId(variants, "c-wht", "s41")).toBe("s42"); // White has no 41
+    expect(defaultSizeId(variants, "c-wht", null)).toBe("s42"); // all sold out: still gives its size
+    expect(
+      defaultSizeId(
+        [
+          {
+            id: "x",
+            sku: "X",
+            colorId: "c-blk",
+            sizeId: null,
+            price: 1,
+            stock: 1,
+          },
+        ],
+        "c-blk",
+        null,
+      ),
+    ).toBeNull();
+  });
+
+  it("offers only the sizes of the chosen color", () => {
+    expect(sizesForColor(variants, both, "c-blk").map((s) => s.id)).toEqual([
+      "s41",
+      "s42",
+    ]);
+    expect(sizesForColor(variants, both, "c-wht").map((s) => s.id)).toEqual([
+      "s42",
+    ]);
+    expect(sizesForColor(variants, both, null)).toEqual(both.sizes);
+    expect(sizesForColor(variants, { colors: [], sizes: [s41] }, null)).toEqual(
+      [s41],
+    );
   });
 });
 
 describe("optionAvailability", () => {
   it("marks combinations that do not exist or are sold out", () => {
     // Nothing else chosen: White exists (size 42) but is sold out, Black has stock.
-    expect(optionAvailability(variants, "color", "c-wht", empty)).toEqual({ exists: true, inStock: false });
-    expect(optionAvailability(variants, "color", "c-blk", empty)).toEqual({ exists: true, inStock: true });
+    expect(optionAvailability(variants, "color", "c-wht", empty)).toEqual({
+      exists: true,
+      inStock: false,
+      reachable: false,
+    });
+    expect(optionAvailability(variants, "color", "c-blk", empty)).toEqual({
+      exists: true,
+      inStock: true,
+      reachable: true,
+    });
     // With size 41 chosen, White does not exist at all.
-    expect(optionAvailability(variants, "color", "c-wht", { colorId: null, sizeId: "s41" })).toEqual({ exists: false, inStock: false });
+    expect(
+      optionAvailability(variants, "color", "c-wht", {
+        colorId: null,
+        sizeId: "s41",
+      }),
+    ).toEqual({ exists: false, inStock: false, reachable: false });
     // With Black chosen, 42 exists but is sold out; 41 is available.
-    expect(optionAvailability(variants, "size", "s42", { colorId: "c-blk", sizeId: null })).toEqual({ exists: true, inStock: false });
-    expect(optionAvailability(variants, "size", "s41", { colorId: "c-blk", sizeId: null })).toEqual({ exists: true, inStock: true });
+    expect(
+      optionAvailability(variants, "size", "s42", {
+        colorId: "c-blk",
+        sizeId: null,
+      }),
+    ).toEqual({ exists: true, inStock: false, reachable: false });
+    expect(
+      optionAvailability(variants, "size", "s41", {
+        colorId: "c-blk",
+        sizeId: null,
+      }),
+    ).toEqual({ exists: true, inStock: true, reachable: true });
   });
 });
 
 describe("selectOption", () => {
-  it("keeps a compatible choice on the other axis", () => {
-    expect(selectOption(variants, { colorId: null, sizeId: "s42" }, "color", "c-blk")).toEqual({ colorId: "c-blk", sizeId: "s42" });
+  it("choosing a color keeps the size when that color has it in stock", () => {
+    const wide: VariantData[] = [
+      {
+        id: "a",
+        sku: "A",
+        colorId: "c-blk",
+        sizeId: "s41",
+        price: 1,
+        stock: 3,
+      },
+      {
+        id: "b",
+        sku: "B",
+        colorId: "c-wht",
+        sizeId: "s41",
+        price: 1,
+        stock: 3,
+      },
+      {
+        id: "c",
+        sku: "C",
+        colorId: "c-wht",
+        sizeId: "s42",
+        price: 1,
+        stock: 3,
+      },
+    ];
+    expect(
+      selectOption(wide, { colorId: "c-blk", sizeId: "s41" }, "color", "c-wht"),
+    ).toEqual({ colorId: "c-wht", sizeId: "s41" });
   });
 
-  it("clears the other axis when the combination does not exist", () => {
-    expect(selectOption(variants, { colorId: null, sizeId: "s41" }, "color", "c-wht")).toEqual({ colorId: "c-wht", sizeId: null });
-    expect(selectOption(variants, { colorId: "c-wht", sizeId: null }, "size", "s41")).toEqual({ colorId: null, sizeId: "s41" });
+  it("choosing a color moves the size to one that color has in stock", () => {
+    // Black 42 is sold out, so going Black -> White with size 41 chosen lands on White's 42.
+    expect(
+      selectOption(
+        variants,
+        { colorId: "c-blk", sizeId: "s41" },
+        "color",
+        "c-wht",
+      ),
+    ).toEqual({ colorId: "c-wht", sizeId: "s42" });
+    expect(
+      selectOption(
+        variants,
+        { colorId: "c-wht", sizeId: "s42" },
+        "color",
+        "c-blk",
+      ),
+    ).toEqual({ colorId: "c-blk", sizeId: "s41" });
+  });
+
+  it("choosing a size keeps the color when the pair exists, else switches to the only color with that size", () => {
+    expect(
+      selectOption(
+        variants,
+        { colorId: "c-blk", sizeId: "s41" },
+        "size",
+        "s42",
+      ),
+    ).toEqual({ colorId: "c-blk", sizeId: "s42" });
+    expect(
+      selectOption(
+        variants,
+        { colorId: "c-wht", sizeId: "s42" },
+        "size",
+        "s41",
+      ),
+    ).toEqual({ colorId: "c-blk", sizeId: "s41" });
+  });
+
+  it("clears the color when several colors have the size and the current one does not", () => {
+    const more: VariantData[] = [
+      ...variants,
+      {
+        id: "v4",
+        sku: "GRY-41",
+        colorId: "c-gry",
+        sizeId: "s41",
+        price: 1,
+        stock: 1,
+      },
+    ];
+    expect(
+      selectOption(more, { colorId: "c-wht", sizeId: "s42" }, "size", "s41"),
+    ).toEqual({ colorId: null, sizeId: "s41" });
   });
 });
 
 describe("displayPrice", () => {
   it("shows the selected variant's price", () => {
-    expect(displayPrice(variants, variants[1], 2_000_000)).toEqual({ price: 2_200_000, from: false });
+    expect(displayPrice(variants, variants[1], 2_000_000)).toEqual({
+      price: 2_200_000,
+      from: false,
+    });
   });
   it("shows the lowest price with a 'from' flag when prices differ", () => {
-    expect(displayPrice(variants, null, 2_000_000)).toEqual({ price: 2_000_000, from: true });
+    expect(displayPrice(variants, null, 2_000_000)).toEqual({
+      price: 2_000_000,
+      from: true,
+    });
   });
   it("has no 'from' flag when every variant costs the same", () => {
-    expect(displayPrice([variants[0], variants[2]], null, 2_000_000)).toEqual({ price: 2_000_000, from: false });
+    expect(displayPrice([variants[0], variants[2]], null, 2_000_000)).toEqual({
+      price: 2_000_000,
+      from: false,
+    });
   });
   it("falls back to the base price with no variants", () => {
     expect(displayPrice([], null, 123)).toEqual({ price: 123, from: false });
@@ -109,7 +374,14 @@ describe("displayPrice", () => {
 
 describe("galleryImages", () => {
   const img = (id: string, extra: Partial<ImageData> = {}): ImageData => ({
-    id, url: `/${id}.jpg`, altVi: null, altEn: null, variantId: null, colorId: null, position: 0, ...extra,
+    id,
+    url: `/${id}.jpg`,
+    altVi: null,
+    altEn: null,
+    variantId: null,
+    colorId: null,
+    position: 0,
+    ...extra,
   });
   const images = [
     img("general"),
@@ -119,18 +391,98 @@ describe("galleryImages", () => {
   ];
 
   it("shows general photos before anything is chosen", () => {
-    expect(galleryImages(images, empty, null).map((i) => i.id)).toEqual(["general"]);
+    expect(galleryImages(images, empty, null).map((i) => i.id)).toEqual([
+      "general",
+    ]);
   });
   it("shows the color's photos when only a color is chosen", () => {
-    expect(galleryImages(images, { colorId: "c-blk", sizeId: null }, null).map((i) => i.id)).toEqual(["black-1", "black-2"]);
+    expect(
+      galleryImages(images, { colorId: "c-blk", sizeId: null }, null).map(
+        (i) => i.id,
+      ),
+    ).toEqual(["black-1", "black-2"]);
   });
   it("prefers the variant's own photos, then its color's", () => {
-    expect(galleryImages(images, { colorId: "c-blk", sizeId: "s41" }, variants[0]).map((i) => i.id)).toEqual(["v1-own"]);
-    expect(galleryImages(images, { colorId: "c-blk", sizeId: "s42" }, variants[1]).map((i) => i.id)).toEqual(["black-1", "black-2"]);
+    expect(
+      galleryImages(
+        images,
+        { colorId: "c-blk", sizeId: "s41" },
+        variants[0],
+      ).map((i) => i.id),
+    ).toEqual(["v1-own"]);
+    expect(
+      galleryImages(
+        images,
+        { colorId: "c-blk", sizeId: "s42" },
+        variants[1],
+      ).map((i) => i.id),
+    ).toEqual(["black-1", "black-2"]);
   });
   it("falls back to general photos, and to any photo when there are no general ones", () => {
-    expect(galleryImages(images, { colorId: "c-wht", sizeId: "s42" }, variants[2]).map((i) => i.id)).toEqual(["general"]);
-    expect(galleryImages([img("only", { colorId: "c-blk" })], empty, null).map((i) => i.id)).toEqual(["only"]);
+    expect(
+      galleryImages(
+        images,
+        { colorId: "c-wht", sizeId: "s42" },
+        variants[2],
+      ).map((i) => i.id),
+    ).toEqual(["general"]);
+    expect(
+      galleryImages([img("only", { colorId: "c-blk" })], empty, null).map(
+        (i) => i.id,
+      ),
+    ).toEqual(["only"]);
     expect(galleryImages([], empty, null)).toEqual([]);
+  });
+});
+
+describe("a product whose colors have different sizes (Sketcher)", () => {
+  // White only in size 36, Black only in size 40.
+  const sk: VariantData[] = [
+    {
+      id: "w36",
+      sku: "WHT-36",
+      colorId: "c-wht",
+      sizeId: "s36",
+      price: 1,
+      stock: 10,
+    },
+    {
+      id: "b40",
+      sku: "BLK-40",
+      colorId: "c-blk",
+      sizeId: "s40",
+      price: 1,
+      stock: 5,
+    },
+  ];
+  const s36: SizeData = {
+    id: "s36",
+    label: "36",
+    type: "SHOE",
+    footLengthCm: null,
+    usSize: null,
+  };
+  const s40: SizeData = {
+    id: "s40",
+    label: "40",
+    type: "SHOE",
+    footLengthCm: null,
+    usSize: null,
+  };
+  const opts = { colors: [white, black], sizes: [s36, s40] };
+
+  it("moves to the only size of the chosen color, and lists only that size", () => {
+    const start = initialSelection(sk, opts);
+    expect(start).toEqual({ colorId: "c-wht", sizeId: "s36" });
+    expect(sizesForColor(sk, opts, start.colorId).map((s) => s.label)).toEqual([
+      "36",
+    ]);
+
+    const black40 = selectOption(sk, start, "color", "c-blk");
+    expect(black40).toEqual({ colorId: "c-blk", sizeId: "s40" });
+    expect(
+      sizesForColor(sk, opts, black40.colorId).map((s) => s.label),
+    ).toEqual(["40"]);
+    expect(resolveVariant(sk, opts, black40)?.sku).toBe("BLK-40");
   });
 });

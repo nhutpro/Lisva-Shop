@@ -44,6 +44,19 @@ describe("createRateLimiter", () => {
     expect(limiter.check("a").allowed).toBe(true);
   });
 
+  it("peek does not count, record counts without checking, clear forgets", () => {
+    const limiter = createRateLimiter({ limit: 2, windowMs: 60_000 });
+    for (let i = 0; i < 5; i++) expect(limiter.peek("a").allowed).toBe(true); // looking never uses attempts
+
+    limiter.record("a");
+    expect(limiter.peek("a").allowed).toBe(true);
+    limiter.record("a");
+    expect(limiter.peek("a")).toEqual({ allowed: false, retryAfterMs: expect.any(Number) });
+
+    limiter.clear("a");
+    expect(limiter.peek("a").allowed).toBe(true);
+  });
+
   it("keeps separate counters per key and can be reset", () => {
     const limiter = createRateLimiter({ limit: 1, windowMs: 60_000 });
     expect(limiter.check("a").allowed).toBe(true);

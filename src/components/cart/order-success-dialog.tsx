@@ -13,13 +13,15 @@ type Props = {
   hotline: string;
   zaloUrl: string;
   productsHref: string;
+  /** For a signed-in shopper: where to see this order. */
+  orderHref?: string;
 };
 
 /**
  * Confirmation pop-up shown after an order request is sent. It is a native modal <dialog>:
  * the browser traps keyboard focus inside, closes it on Escape and dims the page behind it.
  */
-export function OrderSuccessDialog({ code, labels, hotline, zaloUrl, productsHref }: Props) {
+export function OrderSuccessDialog({ code, labels, hotline, zaloUrl, productsHref, orderHref }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const textId = useId();
@@ -90,7 +92,12 @@ export function OrderSuccessDialog({ code, labels, hotline, zaloUrl, productsHre
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href={productsHref} className={primaryButton}>
+        {orderHref && (
+          <Link href={orderHref} className={primaryButton}>
+            {labels.viewOrder}
+          </Link>
+        )}
+        <Link href={productsHref} className={orderHref ? cn(link, "h-12") : primaryButton}>
           {labels.continue}
         </Link>
         <button type="button" onClick={() => ref.current?.close()} className={cn(link, "h-12")}>

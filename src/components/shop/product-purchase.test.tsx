@@ -10,7 +10,14 @@ import { ProductPurchase } from "./product-purchase";
 // next/image needs the Next.js runtime; a plain <img> is enough to test our own logic.
 vi.mock("next/image", () => ({
   // `fill` and `priority` are Next-only props and must not reach the DOM element.
-  default: ({ fill, priority, ...props }: ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; priority?: boolean }) => {
+  default: ({
+    fill,
+    priority,
+    ...props
+  }: ImgHTMLAttributes<HTMLImageElement> & {
+    fill?: boolean;
+    priority?: boolean;
+  }) => {
     void fill;
     void priority;
     // eslint-disable-next-line @next/next/no-img-element
@@ -20,7 +27,15 @@ vi.mock("next/image", () => ({
 
 const labels = vi_.product;
 const render_ = (product: ProductDetailData) =>
-  render(<ProductPurchase product={product} locale="vi" cartHref="/vi/cart" labels={labels} fromLabel={vi_.common.from} />);
+  render(
+    <ProductPurchase
+      product={product}
+      locale="vi"
+      cartHref="/vi/cart"
+      labels={labels}
+      fromLabel={vi_.common.from}
+    />,
+  );
 
 const base = {
   id: "p1",
@@ -36,7 +51,16 @@ const base = {
   specs: [] as ProductDetailData["specs"],
 };
 
-const img = (id: string, extra = {}) => ({ id, url: `/${id}.jpg`, altVi: id, altEn: null, variantId: null, colorId: null, position: 0, ...extra });
+const img = (id: string, extra = {}) => ({
+  id,
+  url: `/${id}.jpg`,
+  altVi: id,
+  altEn: null,
+  variantId: null,
+  colorId: null,
+  position: 0,
+  ...extra,
+});
 
 // Black: 41 (3 left), 42 (2 left, own price). White: 42 only (plenty).
 const shoe: ProductDetailData = {
@@ -50,11 +74,36 @@ const shoe: ProductDetailData = {
     { id: "s42", label: "42", type: "SHOE", footLengthCm: 26.5, usSize: "9" },
   ],
   variants: [
-    { id: "v1", sku: "BLK-41", colorId: "c-blk", sizeId: "s41", price: 2_000_000, stock: 3 },
-    { id: "v2", sku: "BLK-42", colorId: "c-blk", sizeId: "s42", price: 2_200_000, stock: 2 },
-    { id: "v3", sku: "WHT-42", colorId: "c-wht", sizeId: "s42", price: 2_000_000, stock: 20 },
+    {
+      id: "v1",
+      sku: "BLK-41",
+      colorId: "c-blk",
+      sizeId: "s41",
+      price: 2_000_000,
+      stock: 3,
+    },
+    {
+      id: "v2",
+      sku: "BLK-42",
+      colorId: "c-blk",
+      sizeId: "s42",
+      price: 2_200_000,
+      stock: 2,
+    },
+    {
+      id: "v3",
+      sku: "WHT-42",
+      colorId: "c-wht",
+      sizeId: "s42",
+      price: 2_000_000,
+      stock: 20,
+    },
   ],
-  images: [img("general"), img("black-1", { colorId: "c-blk" }), img("black-42-own", { variantId: "v2" })],
+  images: [
+    img("general"),
+    img("black-1", { colorId: "c-blk" }),
+    img("black-42-own", { variantId: "v2" }),
+  ],
 };
 
 const noOptions: ProductDetailData = {
@@ -64,7 +113,16 @@ const noOptions: ProductDetailData = {
   price: 590_000,
   colors: [],
   sizes: [],
-  variants: [{ id: "d1", sku: "DIGI", colorId: null, sizeId: null, price: 590_000, stock: 12 }],
+  variants: [
+    {
+      id: "d1",
+      sku: "DIGI",
+      colorId: null,
+      sizeId: null,
+      price: 590_000,
+      stock: 12,
+    },
+  ],
   images: [img("watch")],
 };
 
@@ -89,7 +147,10 @@ describe("a product without options", () => {
     await user.click(screen.getByRole("button", { name: labels.addToCart }));
     expect(cart()).toEqual([{ variantId: "d1", quantity: 1 }]);
     expect(screen.getByText(labels.added)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: labels.viewCart })).toHaveAttribute("href", "/vi/cart");
+    expect(screen.getByRole("link", { name: labels.viewCart })).toHaveAttribute(
+      "href",
+      "/vi/cart",
+    );
   });
 
   it("adding twice makes quantity 2", async () => {
@@ -102,66 +163,87 @@ describe("a product without options", () => {
 });
 
 describe("a product with color and size", () => {
-  it("asks the shopper to choose instead of failing silently, and adds nothing", async () => {
+  it("opens on the first color with a size in stock already chosen, so it can be added straight away", async () => {
     const user = userEvent.setup();
     render_(shoe);
+    expect(radio(/^Đen/)).toBeChecked();
+    expect(radio(/^41/)).toBeChecked();
 
     await user.click(screen.getByRole("button", { name: labels.addToCart }));
-    expect(screen.getByText(labels.chooseBoth)).toBeInTheDocument();
-    expect(cart()).toEqual([]);
+    expect(cart()).toEqual([{ variantId: "v1", quantity: 1 }]);
+  });
 
-    await user.click(radio(/^Đen/));
+  it("asks the shopper to choose a size when the product has sizes but no colors", async () => {
+    const user = userEvent.setup();
+    render_({
+      ...shoe,
+      colors: [],
+      variants: shoe.variants
+        .map((v) => ({ ...v, colorId: null }))
+        .filter((v) => v.id !== "v3"),
+      images: [img("general")],
+    });
     await user.click(screen.getByRole("button", { name: labels.addToCart }));
     expect(screen.getByText(labels.chooseSize)).toBeInTheDocument();
-    expect(screen.queryByText(labels.chooseBoth)).not.toBeInTheDocument();
     expect(cart()).toEqual([]);
   });
 
-  it("shows 'from' price until a variant is chosen, then that variant's price, stock and SKU", async () => {
+  it("shows the selected variant's price, stock and SKU, and updates them when the size changes", async () => {
     const user = userEvent.setup();
     render_(shoe);
 
-    expect(screen.queryByText(/SKU/)).not.toBeInTheDocument(); // no SKU before a variant is chosen
-    expect(screen.getByText(vi_.common.from)).toBeInTheDocument();
+    expect(screen.queryByText(vi_.common.from)).not.toBeInTheDocument();
     expect(screen.getByText(/2\.000\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/BLK-41/)).toBeInTheDocument();
 
-    await user.click(radio(/^Đen/));
     await user.click(radio(/^42/));
     expect(screen.getByText(/2\.200\.000/)).toBeInTheDocument(); // variant's own price
-    expect(screen.queryByText(vi_.common.from)).not.toBeInTheDocument();
     expect(screen.getByText("Chỉ còn 2 sản phẩm")).toBeInTheDocument();
     expect(screen.getByText(/BLK-42/)).toBeInTheDocument();
   });
 
-  it("disables combinations that do not exist", async () => {
+  it("choosing a color moves to a size that color has, and lists only that color's sizes", async () => {
     const user = userEvent.setup();
     render_(shoe);
 
-    // Nothing chosen yet: everything that exists somewhere is selectable.
-    expect(radio(/^Trắng/)).toBeEnabled();
+    // Black comes in 41 and 42.
     expect(radio(/^41/)).toBeEnabled();
+    expect(radio(/^42/)).toBeEnabled();
 
-    // White only comes in 42, so with 41 chosen White is unavailable.
-    await user.click(radio(/^41/));
-    expect(radio(/^Trắng/)).toBeDisabled();
-    expect(radio(/^Trắng/)).toHaveAccessibleName(new RegExp(labels.optionUnavailable));
-    expect(radio(/^Đen/)).toBeEnabled();
-  });
-
-  it("clears a size that no longer exists with the newly chosen color", async () => {
-    const user = userEvent.setup();
-    render_(shoe);
-    await user.click(radio(/^41/));
-    await user.click(radio(/^Đen/));
-    expect(radio(/^41/)).toBeChecked();
-
-    // Going from Black to White: 41 does not exist in White, so choosing White first is blocked...
-    expect(radio(/^Trắng/)).toBeDisabled();
-    // ...while choosing 42 first and then White works.
-    await user.click(radio(/^42/));
+    // White only comes in 42: size 41 is no longer offered and 42 is chosen for the shopper.
     await user.click(radio(/^Trắng/));
     expect(radio(/^Trắng/)).toBeChecked();
+    expect(
+      screen.queryByRole("radio", { name: /^41/ }),
+    ).not.toBeInTheDocument();
     expect(radio(/^42/)).toBeChecked();
+
+    // Back to Black: 42 is in stock there, so it stays; 41 is offered again.
+    await user.click(radio(/^Đen/));
+    expect(radio(/^42/)).toBeChecked();
+    expect(radio(/^41/)).toBeEnabled();
+  });
+
+  it("moves to the first size in stock when the chosen size is sold out in the new color", async () => {
+    const user = userEvent.setup();
+    render_({
+      ...shoe,
+      variants: [
+        ...shoe.variants,
+        {
+          id: "v4",
+          sku: "WHT-41",
+          colorId: "c-wht",
+          sizeId: "s41",
+          price: 2_000_000,
+          stock: 0,
+        },
+      ],
+    });
+    await user.click(radio(/^Trắng/)); // from Black 41: White 41 is sold out, so White 42 is chosen
+    expect(radio(/^Trắng/)).toBeChecked();
+    expect(radio(/^42/)).toBeChecked();
+    expect(radio(/^41/)).toBeDisabled();
   });
 
   it("adds exactly the chosen variant to the cart and confirms it", async () => {
@@ -180,19 +262,17 @@ describe("a product with color and size", () => {
     expect(screen.queryByText(labels.added)).not.toBeInTheDocument();
   });
 
-  it("switches the photos with the selection: general, then color, then the variant's own", async () => {
+  it("switches the photos with the selection: color first, then the variant's own", async () => {
     const user = userEvent.setup();
     render_(shoe);
     const gallery = screen.getByRole("group", { name: labels.gallery });
     const main = () => within(gallery).getAllByRole("img")[0];
 
-    expect(main()).toHaveAttribute("src", "/general.jpg");
-    await user.click(radio(/^Đen/));
-    expect(main()).toHaveAttribute("src", "/black-1.jpg");
-    await user.click(radio(/^41/)); // no own photo: still the color's
-    expect(main()).toHaveAttribute("src", "/black-1.jpg");
+    expect(main()).toHaveAttribute("src", "/black-1.jpg"); // Black is chosen when the page opens
     await user.click(radio(/^42/)); // has its own photo
     expect(main()).toHaveAttribute("src", "/black-42-own.jpg");
+    await user.click(radio(/^Trắng/)); // White has no photos of its own: the general one
+    expect(main()).toHaveAttribute("src", "/general.jpg");
   });
 
   it("shows a size guide with foot length for shoes", async () => {
@@ -200,15 +280,22 @@ describe("a product with color and size", () => {
     render_(shoe);
     await user.click(screen.getByText(labels.sizeGuide.title));
     const table = screen.getByRole("table");
-    expect(within(table).getByRole("rowheader", { name: "42" })).toBeInTheDocument();
+    expect(
+      within(table).getByRole("rowheader", { name: "42" }),
+    ).toBeInTheDocument();
     expect(within(table).getByText("26.5")).toBeInTheDocument();
   });
 });
 
 describe("sold out", () => {
   it("disables the button when nothing is in stock", () => {
-    render_({ ...noOptions, variants: [{ ...noOptions.variants[0], stock: 0 }] });
-    expect(screen.getByRole("button", { name: labels.soldOutButton })).toBeDisabled();
+    render_({
+      ...noOptions,
+      variants: [{ ...noOptions.variants[0], stock: 0 }],
+    });
+    expect(
+      screen.getByRole("button", { name: labels.soldOutButton }),
+    ).toBeDisabled();
     // "Hết hàng" is shown twice: in the stock line and on the disabled button.
     expect(screen.getAllByText(labels.soldOut)).toHaveLength(2);
   });
@@ -216,7 +303,9 @@ describe("sold out", () => {
   it("disables a size whose variants are all sold out", () => {
     render_({
       ...shoe,
-      variants: shoe.variants.map((v) => (v.id === "v1" ? { ...v, stock: 0 } : v)),
+      variants: shoe.variants.map((v) =>
+        v.id === "v1" ? { ...v, stock: 0 } : v,
+      ),
     });
     // 41 only exists in Black and is now sold out.
     expect(radio(/^41/)).toBeDisabled();

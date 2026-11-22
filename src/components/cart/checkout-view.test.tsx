@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCartLines } from "@/app/[lang]/cart/actions";
-import { submitOrderAction } from "@/app/[lang]/checkout/actions";
+import { loadCheckoutDefaults, submitOrderAction } from "@/app/[lang]/checkout/actions";
 import vi_ from "@/i18n/dictionaries/vi.json";
 import { useCartStore } from "@/lib/cart/store";
 import type { CartLineData } from "@/lib/catalog/cart-lines";
@@ -11,13 +11,14 @@ import { CheckoutView } from "./checkout-view";
 
 vi.mock("next/image", () => import("@/test/next-image-mock"));
 vi.mock("@/app/[lang]/cart/actions", () => ({ loadCartLines: vi.fn() }));
-vi.mock("@/app/[lang]/checkout/actions", () => ({ submitOrderAction: vi.fn() }));
+vi.mock("@/app/[lang]/checkout/actions", () => ({ submitOrderAction: vi.fn(), loadCheckoutDefaults: vi.fn() }));
 
 const t = vi_.checkout;
 const labels = { checkout: vi_.checkout, cart: vi_.cart, orderSuccess: vi_.orderSuccess };
 const contact = { hotline: "0900 000 000", zaloUrl: "https://zalo.me/0900000000" };
 const load = vi.mocked(loadCartLines);
 const submit = vi.mocked(submitOrderAction);
+const defaultsLoader = vi.mocked(loadCheckoutDefaults);
 
 const line = (id: string, extra: Partial<CartLineData> = {}): CartLineData => ({
   variantId: id,
@@ -60,6 +61,8 @@ beforeEach(async () => {
   localStorage.clear();
   load.mockReset();
   submit.mockReset();
+  defaultsLoader.mockReset();
+  defaultsLoader.mockResolvedValue(null); // a guest, unless a test says otherwise
   load.mockResolvedValue([shoe, watch]);
   await setCart([
     { variantId: "v1", quantity: 2 },
@@ -247,5 +250,102 @@ describe("when the server says no", () => {
     await user.click(submitButton());
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Vui lòng thử lại sau 7 phút");
+  });
+});
+
+describe("a guest", () => {
+  it("is invited to sign in, with a link that brings them back to the checkout", async () => {
+    renderCheckout();
+    await screen.findByText("Giày Runner");
+    const link = screen.getByRole("link", { name: vi_.checkout.loginLink });
+    expect(link).toHaveAttribute("href", `/vi/login?next=${encodeURIComponent("/vi/checkout")}`);
+    expect(screen.queryByRole("checkbox", { name: vi_.checkout.saveAddress })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(vi_.checkout.savedAddresses)).not.toBeInTheDocument();
+  });
+
+  it("gets no link to an order page in the confirmation", async () => {
+    const user = userEvent.setup();
+    submit.mockResolvedValue({ status: "success", code: "LV-2611-AAAA" });
+    renderCheckout();
+    await screen.findByText("Giày Runner");
+    await fillValid(user);
+    await user.click(submitButton());
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByRole("link", { name: vi_.orderSuccess.viewOrder })).not.toBeInTheDocument();
+  });
+});
+
+describe("a signed-in shopper", () => {
+  const address = (id: string, street: string, extra = {}) => ({
+    id, recipientName: `Người nhận ${id}`, phone: "0911111111", province: "Hà Nội", district: "Ba Đình", ward: "Phúc Xá", street, isDefault: false, ...extra,
+  });
+  const signedIn = (addresses = [address("a1", "1 Phố Huế", { isDefault: true }), address("a2", "2 Cầu Giấy")]) =>
+    defaultsLoader.mockResolvedValue({ user: { name: "Nguyễn An", email: "an@example.com", phone: "0900000001" }, addresses });
+
+  it("starts with their details and default address filled in", async () => {
+    signedIn();
+    renderCheckout();
+    await screen.findByText("Giày Runner");
+
+    expect(screen.getByLabelText(new RegExp(t.fields.customerName))).toHaveValue("Người nhận a1");
+    expect(screen.getByLabelText(new RegExp(t.fields.phone))).toHaveValue("0911111111");
+    expect(screen.getByLabelText(new RegExp(t.fields.email))).toHaveValue("an@example.com");
+    expect(screen.getByLabelText(new RegExp(t.fields.street))).toHaveValue("1 Phố Huế");
+    expect(screen.getByLabelText(new RegExp(t.fields.province))).toHaveValue("Hà Nội");
+    expect(screen.queryByRole("link", { name: vi_.checkout.loginLink })).not.toBeInTheDocument();
+  });
+
+  it("uses their profile when they have no saved address yet, and offers to save the new one", async () => {
+    signedIn([]);
+    renderCheckout();
+    await screen.findByText("Giày Runner");
+
+    expect(screen.getByLabelText(new RegExp(t.fields.customerName))).toHaveValue("Nguyễn An");
+    expect(screen.getByLabelText(new RegExp(t.fields.phone))).toHaveValue("0900000001");
+    expect(screen.getByLabelText(new RegExp(t.fields.street))).toHaveValue("");
+    expect(screen.queryByLabelText(vi_.checkout.savedAddresses)).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: vi_.checkout.saveAddress })).toBeChecked(); // first address: save by default
+  });
+
+  it("fills the fields from another saved address when it is chosen, without changing the email", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    renderCheckout();
+    await screen.findByText("Giày Runner");
+
+    await user.selectOptions(screen.getByLabelText(vi_.checkout.savedAddresses), "a2");
+    expect(screen.getByLabelText(new RegExp(t.fields.customerName))).toHaveValue("Người nhận a2");
+    expect(screen.getByLabelText(new RegExp(t.fields.street))).toHaveValue("2 Cầu Giấy");
+    expect(screen.getByLabelText(new RegExp(t.fields.email))).toHaveValue("an@example.com");
+    expect(screen.getByRole("checkbox", { name: vi_.checkout.saveAddress })).not.toBeChecked(); // already saved before
+  });
+
+  it("sends the saved-address choice and the values, and the picker itself is not part of the order", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    submit.mockResolvedValue({ status: "success", code: "LV-2611-BBBB" });
+    renderCheckout();
+    await screen.findByText("Giày Runner");
+    await user.selectOptions(screen.getByLabelText(vi_.checkout.savedAddresses), "a2");
+    await user.click(screen.getByRole("checkbox", { name: vi_.checkout.saveAddress }));
+    await user.click(submitButton());
+
+    const form = sent();
+    expect(form.get("street")).toBe("2 Cầu Giấy");
+    expect(form.get("saveAddress")).toBe("on");
+    expect(form.get("email")).toBe("an@example.com");
+    expect([...form.keys()]).not.toContain("savedAddress");
+  });
+
+  it("is offered a link to the order in the confirmation", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    submit.mockResolvedValue({ status: "success", code: "LV-2611-CCCC" });
+    renderCheckout();
+    await screen.findByText("Giày Runner");
+    await user.click(submitButton());
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("link", { name: vi_.orderSuccess.viewOrder })).toHaveAttribute("href", "/vi/account/orders/LV-2611-CCCC");
   });
 });

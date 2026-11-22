@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** Accepts "0912 345 678", "+84 912 345 678", "84912345678"; returns "0912345678". */
-const vnMobile = z
+export const vnMobile = z
   .string()
   .transform((s) => s.replace(/[\s.\-()]/g, ""))
   .transform((s) => {
@@ -11,7 +11,8 @@ const vnMobile = z
   })
   .pipe(z.string().regex(/^0[35789]\d{8}$/, "invalid_phone"));
 
-const emptyToUndefined = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+export const emptyToUndefined = (v: unknown) =>
+  typeof v === "string" && v.trim() === "" ? undefined : v;
 
 export const orderInputSchema = z.object({
   customerName: z.string().trim().min(2).max(100),
@@ -22,7 +23,10 @@ export const orderInputSchema = z.object({
   district: z.string().trim().min(1).max(100),
   ward: z.string().trim().min(1).max(100),
   street: z.string().trim().min(1).max(200),
-  customerNote: z.preprocess(emptyToUndefined, z.string().trim().max(500).optional()),
+  customerNote: z.preprocess(
+    emptyToUndefined,
+    z.string().trim().max(500).optional(),
+  ),
   locale: z.enum(["vi", "en"]).default("vi"),
   userId: z.string().optional(),
   /** Random key from the checkout page. Submitting the same key again returns the same order. */

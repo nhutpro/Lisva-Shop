@@ -43,18 +43,26 @@ export async function createOrderOnce(db: PrismaClient, rawInput: unknown) {
       const order = await db.$transaction(async (tx) => {
         const variants = await tx.productVariant.findMany({
           where: { id: { in: [...quantities.keys()] } },
-          include: { product: { include: { images: true } }, color: true, size: true },
+          include: {
+            product: { include: { images: true } },
+            color: true,
+            size: true,
+          },
         });
         const byId = new Map(variants.map((v) => [v.id, v]));
 
         const lines = [...quantities].map(([variantId, quantity]) => {
           const variant = byId.get(variantId);
-          if (!variant) throw new OrderError("VARIANT_NOT_FOUND", { variantId });
+          if (!variant)
+            throw new OrderError("VARIANT_NOT_FOUND", { variantId });
           if (!variant.isActive || variant.product.status !== "ACTIVE") {
             throw new OrderError("VARIANT_UNAVAILABLE", { variantId });
           }
           if (variant.stock < quantity) {
-            throw new OrderError("OUT_OF_STOCK", { variantId, available: variant.stock });
+            throw new OrderError("OUT_OF_STOCK", {
+              variantId,
+              available: variant.stock,
+            });
           }
           const unitPrice = effectivePrice(variant.product, variant);
           return {
@@ -63,7 +71,8 @@ export async function createOrderOnce(db: PrismaClient, rawInput: unknown) {
             colorName: variant.color?.nameVi ?? null,
             sizeLabel: variant.size?.label ?? null,
             sku: variant.sku,
-            imageUrl: pickImages(variant.product.images, variant)[0]?.url ?? null,
+            imageUrl:
+              pickImages(variant.product.images, variant)[0]?.url ?? null,
             unitPrice,
             quantity,
             lineTotal: unitPrice * quantity,
@@ -90,7 +99,9 @@ export async function createOrderOnce(db: PrismaClient, rawInput: unknown) {
             subtotal,
             total: subtotal, // shipping is quoted later by the owner
             items: { create: lines },
-            history: { create: { fromStatus: null, toStatus: "PENDING_CONTACT" } },
+            history: {
+              create: { fromStatus: null, toStatus: "PENDING_CONTACT" },
+            },
           },
           include: { items: true },
         });

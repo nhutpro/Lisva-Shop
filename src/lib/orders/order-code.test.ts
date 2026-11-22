@@ -10,7 +10,11 @@ describe("generateOrderCode", () => {
 
   it("uses year and month in Vietnam time", () => {
     // 2026-11-30 20:00 UTC is already December 1st in Vietnam (UTC+7).
-    expect(generateOrderCode(new Date("2026-11-30T20:00:00Z"), () => 0)).toBe("LV-2612-2222");
-    expect(generateOrderCode(new Date("2026-11-14T03:00:00Z"), () => 0)).toBe("LV-2611-2222");
+    expect(generateOrderCode(new Date("2026-11-30T20:00:00Z"), () => 0)).toBe(
+      "LV-2612-2222",
+    );
+    expect(generateOrderCode(new Date("2026-11-14T03:00:00Z"), () => 0)).toBe(
+      "LV-2611-2222",
+    );
   });
 });

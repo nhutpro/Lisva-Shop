@@ -18,6 +18,7 @@ import {
   optionAvailability,
   resolveVariant,
   selectOption,
+  sizesForColor,
   stockState,
   type Selection,
 } from "@/lib/catalog/variant-selection";
@@ -36,12 +37,23 @@ type Props = {
 const optionBase =
   "grid min-h-11 min-w-11 cursor-pointer place-items-center rounded-sm border border-border bg-surface px-3 text-sm transition-colors duration-300 hover:border-primary peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:border-dashed peer-disabled:text-muted-foreground peer-disabled:line-through peer-disabled:hover:border-border";
 
-export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }: Props) {
+export function ProductPurchase({
+  product,
+  locale,
+  cartHref,
+  labels,
+  fromLabel,
+}: Props) {
   const options = { colors: product.colors, sizes: product.sizes };
-  const [selection, setSelection] = useState<Selection>(() => initialSelection(product.variants, options));
+  const [selection, setSelection] = useState<Selection>(() =>
+    initialSelection(product.variants, options),
+  );
   const [added, setAdded] = useState<{ sku: string } | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
-  const [thumb, setThumb] = useState<{ key: string; index: number }>({ key: "", index: 0 });
+  const [thumb, setThumb] = useState<{ key: string; index: number }>({
+    key: "",
+    index: 0,
+  });
   const addToCart = useCartStore((s) => s.add);
 
   const name = pick(locale, product.nameVi, product.nameEn);
@@ -50,10 +62,15 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
   const missing = missingOptions(options, selection);
   const images = galleryImages(product.images, selection, variant);
   const imagesKey = images.map((i) => i.id).join("|");
-  const activeIndex = thumb.key === imagesKey ? Math.min(thumb.index, images.length - 1) : 0;
+  const activeIndex =
+    thumb.key === imagesKey ? Math.min(thumb.index, images.length - 1) : 0;
   const active = images[activeIndex];
 
-  const { price, from } = displayPrice(product.variants, variant, product.price);
+  const { price, from } = displayPrice(
+    product.variants,
+    variant,
+    product.price,
+  );
   const percent = salePercent(price, product.compareAtPrice);
   const allSoldOut = product.variants.every((v) => v.stock <= 0);
   const state = variant ? stockState(variant.stock) : null;
@@ -68,7 +85,13 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
   const submit = () => {
     if (missing.length > 0) {
       setAdded(null);
-      setWarning(missing.length === 2 ? labels.chooseBoth : missing[0] === "color" ? labels.chooseColor : labels.chooseSize);
+      setWarning(
+        missing.length === 2
+          ? labels.chooseBoth
+          : missing[0] === "color"
+            ? labels.chooseColor
+            : labels.chooseSize,
+      );
       return;
     }
     if (!variant) {
@@ -98,7 +121,11 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
       {/* Gallery */}
-      <div className="lg:sticky lg:top-24 lg:self-start" role="group" aria-label={labels.gallery}>
+      <div
+        className="lg:sticky lg:top-24 lg:self-start"
+        role="group"
+        aria-label={labels.gallery}
+      >
         <div className="relative aspect-square overflow-hidden rounded-lg bg-[radial-gradient(circle_at_50%_55%,#fff,#efebe2)] shadow-soft">
           {active ? (
             <Image
@@ -128,14 +155,25 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
                 <button
                   type="button"
                   onClick={() => setThumb({ key: imagesKey, index: i })}
-                  aria-label={format(labels.selectedPhoto, { n: i + 1, total: images.length })}
+                  aria-label={format(labels.selectedPhoto, {
+                    n: i + 1,
+                    total: images.length,
+                  })}
                   aria-current={i === activeIndex ? "true" : undefined}
                   className={cn(
                     "relative block size-16 overflow-hidden rounded-sm border bg-surface transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:size-20",
-                    i === activeIndex ? "border-primary" : "border-border hover:border-primary",
+                    i === activeIndex
+                      ? "border-primary"
+                      : "border-border hover:border-primary",
                   )}
                 >
-                  <Image src={img.url} alt="" fill sizes="80px" className="object-contain p-1.5" />
+                  <Image
+                    src={img.url}
+                    alt=""
+                    fill
+                    sizes="80px"
+                    className="object-contain p-1.5"
+                  />
                 </button>
               </li>
             ))}
@@ -145,8 +183,12 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
 
       {/* Details */}
       <div>
-        <p className="text-sm tracking-wide text-muted-foreground uppercase">{product.brandName}</p>
-        <h1 className="mt-1 text-3xl leading-tight font-medium sm:text-4xl">{name}</h1>
+        <p className="text-sm tracking-wide text-muted-foreground uppercase">
+          {product.brandName}
+        </p>
+        <h1 className="mt-1 text-3xl leading-tight font-medium sm:text-4xl">
+          {name}
+        </h1>
         <Price
           price={price}
           compareAtPrice={product.compareAtPrice}
@@ -168,8 +210,13 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
               </legend>
               <div className="flex flex-wrap gap-2">
                 {product.colors.map((c) => {
-                  const a = optionAvailability(product.variants, "color", c.id, selection);
-                  const disabled = !a.exists || !a.inStock;
+                  const a = optionAvailability(
+                    product.variants,
+                    "color",
+                    c.id,
+                    selection,
+                  );
+                  const disabled = !a.reachable; // choosing a color moves the size, so only its own stock matters
                   const colorName = pick(locale, c.nameVi, c.nameEn);
                   return (
                     <label key={c.id} className="relative">
@@ -182,7 +229,12 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
                         onChange={() => choose("color", c.id)}
                         className="peer sr-only"
                       />
-                      <span className={cn(optionBase, "gap-2 px-4 [grid-auto-flow:column]")}>
+                      <span
+                        className={cn(
+                          optionBase,
+                          "gap-2 px-4 [grid-auto-flow:column]",
+                        )}
+                      >
                         <span
                           aria-hidden
                           className="size-4 rounded-full ring-1 ring-border"
@@ -192,7 +244,11 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
                         {disabled && (
                           <span className="sr-only">
                             {" "}
-                            ({a.exists ? labels.optionSoldOut : labels.optionUnavailable})
+                            (
+                            {a.exists
+                              ? labels.optionSoldOut
+                              : labels.optionUnavailable}
+                            )
                           </span>
                         )}
                       </span>
@@ -205,10 +261,21 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
 
           {product.sizes.length > 0 && (
             <fieldset>
-              <legend className="mb-3 text-sm font-medium">{labels.size}</legend>
+              <legend className="mb-3 text-sm font-medium">
+                {labels.size}
+              </legend>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => {
-                  const a = optionAvailability(product.variants, "size", s.id, selection);
+                {sizesForColor(
+                  product.variants,
+                  options,
+                  selection.colorId,
+                ).map((s) => {
+                  const a = optionAvailability(
+                    product.variants,
+                    "size",
+                    s.id,
+                    selection,
+                  );
                   const disabled = !a.exists || !a.inStock;
                   return (
                     <label key={s.id} className="relative">
@@ -226,7 +293,11 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
                         {disabled && (
                           <span className="sr-only">
                             {" "}
-                            ({a.exists ? labels.optionSoldOut : labels.optionUnavailable})
+                            (
+                            {a.exists
+                              ? labels.optionSoldOut
+                              : labels.optionUnavailable}
+                            )
                           </span>
                         )}
                       </span>
@@ -243,16 +314,26 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
                     <table className="w-full text-left text-sm tabular-nums">
                       <thead className="text-muted-foreground">
                         <tr>
-                          <th scope="col" className="py-2 pr-4 font-medium">{labels.sizeGuide.size}</th>
-                          <th scope="col" className="py-2 pr-4 font-medium">{labels.sizeGuide.foot}</th>
-                          <th scope="col" className="py-2 font-medium">{labels.sizeGuide.us}</th>
+                          <th scope="col" className="py-2 pr-4 font-medium">
+                            {labels.sizeGuide.size}
+                          </th>
+                          <th scope="col" className="py-2 pr-4 font-medium">
+                            {labels.sizeGuide.foot}
+                          </th>
+                          <th scope="col" className="py-2 font-medium">
+                            {labels.sizeGuide.us}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {product.sizes.map((s) => (
                           <tr key={s.id} className="border-t border-border">
-                            <th scope="row" className="py-2 pr-4 font-medium">{s.label}</th>
-                            <td className="py-2 pr-4">{s.footLengthCm ?? "–"}</td>
+                            <th scope="row" className="py-2 pr-4 font-medium">
+                              {s.label}
+                            </th>
+                            <td className="py-2 pr-4">
+                              {s.footLengthCm ?? "–"}
+                            </td>
                             <td className="py-2">{s.usSize ?? "–"}</td>
                           </tr>
                         ))}
@@ -267,10 +348,23 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
 
         <div className="mt-6 min-h-12 text-sm" aria-live="polite">
           {stockText && (
-            <p className={cn("flex items-center gap-2", state === "low" && "text-destructive", soldOut && "text-muted-foreground")}>
+            <p
+              className={cn(
+                "flex items-center gap-2",
+                state === "low" && "text-destructive",
+                soldOut && "text-muted-foreground",
+              )}
+            >
               <span
                 aria-hidden
-                className={cn("size-2 rounded-full", soldOut ? "bg-muted-foreground" : state === "low" ? "bg-destructive" : "bg-green-600")}
+                className={cn(
+                  "size-2 rounded-full",
+                  soldOut
+                    ? "bg-muted-foreground"
+                    : state === "low"
+                      ? "bg-destructive"
+                      : "bg-green-600",
+                )}
               />
               {stockText}
               {variant && (
@@ -280,7 +374,9 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
               )}
             </p>
           )}
-          <p className="mt-1 text-xs text-muted-foreground">{labels.stockNote}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {labels.stockNote}
+          </p>
         </div>
 
         <button
@@ -301,7 +397,10 @@ export function ProductPurchase({ product, locale, cartHref, labels, fromLabel }
                 <Check className="size-4" aria-hidden />
                 {labels.added}
               </span>
-              <Link href={cartHref} className="font-medium text-foreground underline underline-offset-4">
+              <Link
+                href={cartHref}
+                className="font-medium text-foreground underline underline-offset-4"
+              >
                 {labels.viewCart}
               </Link>
             </p>
