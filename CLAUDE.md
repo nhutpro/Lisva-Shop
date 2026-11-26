@@ -13,10 +13,11 @@ E-commerce site for watches and shoes, Vietnam market, Vietnamese first with an 
 ## Commands
 - `npm run dev`: dev server
 - `npm run build`: production build
-- `npm run lint`, `npm run typecheck`, `npm test` (Vitest; `npm run test:watch`)
+- `npm run lint`, `npm run typecheck`, `npm test` (Vitest, all tests; `npm run test:watch`). `npm run test:unit`: unit and component tests, no database needed. `npm run test:integration`: `*.db.test.ts` files against `lisva_test` (needs `npm run db:up`). Name a test file `*.db.test.ts` when it uses the database.
+- CI: `.gitlab-ci.yml` runs check (lint, typecheck) -> unit -> integration (Postgres service, integration tests, seed, build).
 - `npm run format`: Prettier
 - Database (needs Docker running): `npm run db:up` / `db:down` (local Postgres), `db:migrate` (new migration after editing `prisma/schema.prisma`), `db:deploy` (apply existing), `db:seed` (fictional sample catalog; wipes catalog and orders, local DB only), `db:studio` (browse data)
-- `npm test` needs the database up: DB tests run against the separate `lisva_test` database and refuse to run against anything else.
+- Integration tests (and `npm test`) need the database up: they run against the separate `lisva_test` database and refuse to run against anything else.
 
 ## Stack
 Next.js 16 (App Router) + TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), lucide-react, Zod, Zustand (cart). Planned: PostgreSQL + Prisma, Auth.js, Telegram Bot API for order alerts, Claude API for AI features.

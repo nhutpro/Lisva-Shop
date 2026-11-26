@@ -1,15 +1,25 @@
-# Minimal GitLab CI for the free tier: ONE job, so dependencies are installed once.
-# Order inside the job is cheapest-first so a simple mistake fails in seconds:
-# lint -> typecheck -> tests -> sample data -> production build.
+# GitLab CI in three steps, cheapest first, so a simple mistake stops the pipeline before the costly steps run:
+#   1. check        lint + typecheck                                   (no database)
+#   2. unit         unit and component tests, `npm run test:unit`       (no database, everything external is mocked)
+#   3. integration  database tests + production build                   (Postgres started as a CI service)
+#   4. deploy       automatic on every new commit to the default branch, only when steps 1-3 passed
 #
-# Cost controls (the free tier gives a limited number of compute minutes per month):
-#  - Pipelines run only for merge requests and for the default branch. A plain push to another branch does nothing,
-#    and a branch with an open merge request is not built twice.
-#  - A merge request that only changes docs or other non-code files is skipped.
-#  - A newer commit cancels a pipeline that is still running.
-#  - The job is stopped after 15 minutes.
-#  - The npm download cache is kept between runs.
+# Cost controls for the free tier (compute minutes are limited per month):
+#  - Pipelines run only for merge requests and for the default branch; a branch with an open merge request is not
+#    built twice, and a plain push to another branch does nothing.
+#  - A merge request that changes only docs or other non-code files is skipped.
+#  - A newer commit cancels a pipeline that is still running; every job stops after 10 minutes.
+#  - Downloaded npm packages are cached between jobs and pipelines.
 # Put "[skip ci]" in a commit message to skip a pipeline completely.
+#
+# "Start Docker first": GitLab starts the database for you through `services:` (a Postgres container next to the job).
+# No Docker-in-Docker is needed, which would be slower and cost more minutes.
+
+stages:
+  - check
+  - unit
+  - integration
+  - deploy
 
 workflow:
   auto_cancel:
@@ -18,31 +28,26 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-check:
-  stage: test
+variables:
+  NEXT_TELEMETRY_DISABLED: "1"
+  npm_config_cache: $CI_PROJECT_DIR/.npm
+
+# Shared settings for every job.
+.node:
   image: node:20 # the project is developed on Node 20.x
   interruptible: true
-  timeout: 15m
-  services:
-    - name: postgres:16-alpine
-      alias: postgres
-  variables:
-    POSTGRES_USER: lisva
-    POSTGRES_PASSWORD: ci_only_password
-    POSTGRES_DB: lisva_test
-    # One throw-away database serves the tests and the build.
-    DATABASE_URL: postgresql://lisva:ci_only_password@postgres:5432/lisva_test?schema=public
-    DATABASE_URL_TEST: postgresql://lisva:ci_only_password@postgres:5432/lisva_test?schema=public
-    NEXT_TELEMETRY_DISABLED: "1"
-    npm_config_cache: $CI_PROJECT_DIR/.npm
+  timeout: 10m
   cache:
     key:
       files:
         - package-lock.json
     paths:
       - .npm/
+    policy: pull # only the first job uploads the cache
+  before_script:
+    - npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
   rules:
-    # The default branch always runs everything.
+    # The default branch always runs.
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     # A merge request runs only when something that can change the app changed.
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -60,7 +65,70 @@ check:
         - eslint.config.*
         - vitest.*
         - .gitlab-ci.yml
+
+# 1. Lint and typecheck.
+typecheck:
+  extends: .node
+  stage: check
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+    policy: pull-push
   script:
-    - npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
     - npm run lint
     - npm run typecheck
+
+# 2. Unit and component tests: pure logic and React screens; no database needed.
+unit-test:
+  extends: .node
+  stage: unit
+  script:
+    - npm run test:unit
+
+# 3. Integration: the *.db.test.ts files against a real Postgres, then the production build (it reads the catalog
+#    while prerendering pages, so it needs the database too).
+integration-test:
+  extends: .node
+  stage: integration
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    POSTGRES_USER: lisva
+    POSTGRES_PASSWORD: ci_only_password
+    POSTGRES_DB: lisva_test
+    # One throw-away database serves the tests and the build.
+    DATABASE_URL: postgresql://lisva:ci_only_password@postgres:5432/lisva_test?schema=public
+    DATABASE_URL_TEST: postgresql://lisva:ci_only_password@postgres:5432/lisva_test?schema=public
+  script:
+    - npm run test:integration # applies the migrations to the test database first
+    - npm run db:seed # sample catalog for the build (this database is thrown away after the job)
+    - npm run build
+  # End-to-end browser tests belong here too, once the project has an e2e suite (it does not yet).
+
+# 4. Deploy to Cloudflare, automatically for every new commit on the default branch.
+#    It only starts when check, unit and integration passed (stages run in order).
+#    Needs these CI/CD variables (Settings > CI/CD > Variables, "Masked" and "Protected"):
+#      CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID   used by wrangler
+#      PROD_DATABASE_URL                             the live database (for migrations and the build)
+#    App secrets (Telegram, Cloudinary, DeepL, the database URL) must also be set on the Worker itself
+#    (`wrangler secret put NAME`), never in this file.
+#    NOT READY YET: the project has no Cloudflare Workers setup (no wrangler config, no OpenNext/vinext build).
+#    Until that exists this job will fail. See docs/deploy-cloudflare.md, section 9.
+deploy-cloudflare:
+  extends: .node
+  stage: deploy
+  environment: production
+  resource_group: production # never two deploys at the same time; a newer one waits for the running one
+  interruptible: false # a new commit never cancels a deploy half way
+  timeout: 15m
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # automatic, no click needed
+  variables:
+    DATABASE_URL: $PROD_DATABASE_URL
+  script:
+    - npm run build # replace with your Workers build (OpenNext or vinext) once it is set up
+    - npx wrangler deploy
